@@ -1,0 +1,14 @@
+Package: ellipse_evolution
+Type: Package
+Title: Contains functions for simulation and inference under the ellipse evolution model
+Version: 0.1
+Imports:
+	R6,
+	ape,
+	phytools,
+	distributions3,
+	sf,
+	hms,
+	condMVNorm
+Encoding: UTF-8
+RoxygenNote: 7.2.3

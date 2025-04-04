@@ -1,0 +1,7 @@
+*.DS_Store
+*.Rbuildignore
+/joblogs/*.stdout.txt
+/package/R/._*
+/simulations/output/full*/
+/simulations/scripts/._*
+/skinks/output/
