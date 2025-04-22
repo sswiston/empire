@@ -5,7 +5,7 @@
 #' @param char One of three continuous characters: "x", "y", or "a"
 #' @param daughter One of two daughters: "left", "right"
 #' @param d The daughter configuration during cladogenesis (0,1), where 0 makes the left daughter D1 and 1 makes the right daughter D1
-#' @param m The cladogenetic mode (0,1), where 0 is sympatric and 1 is allopatric
+#' @param m The cladogenetic mode (0,1), where 0 is budding and 1 is splitting
 #' @param c The c value (not index) of the cladogenetic scenario's concentric circle --> ex. 0.5
 #' @param h The h value (not index) of the cladogenetic scenario's direction line --> ex. pi/4, if required
 #' @param x The x value to be transformed, if required
@@ -60,14 +60,14 @@ transform_node = function(char=NULL, daughter=NULL, d=NULL, m=NULL, c=NULL, h=NU
     if (!("numeric" %in% class(r))) {stop("r must be numeric")}
     if (!("numeric" %in% class(s))) {stop("s must be numeric")}
     if (!("numeric" %in% class(z))) {stop("z must be numeric")}
-    if (m==0) { # m = 0 (sympatric)
+    if (m==0) { # m = 0 (budding)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(x)}
         else if (daughter=="right") {return(x + delta_x(c,r,s,a,z,h))}}
       else if (d==1) { # d = 1 (D2 = left, D1 = right)
         if (daughter=="left") {return(x + delta_x(c,r,s,a,z,h))}
         else if (daughter=="right") {return(x)}}}
-    else if (m==1) { # m = 1 (allopatric)
+    else if (m==1) { # m = 1 (splitting)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(x + delta_x(sqrt(1/(1+(1+c)^2)),r,s,a,z,(h+pi)))} # Relative radius of new daughter circle is sqrt(1/(1+(1+c)^2))
         else if (daughter=="right") {return(x + delta_x(sqrt((1+c)^2/(1+(1+c)^2)),r,s,a,z,h))}} # Relative radius of new daughter circle is sqrt((1+c)^2/(1+(1+c)^2))
@@ -84,14 +84,14 @@ transform_node = function(char=NULL, daughter=NULL, d=NULL, m=NULL, c=NULL, h=NU
     if (!("numeric" %in% class(r))) {stop("r must be numeric")}
     if (!("numeric" %in% class(s))) {stop("s must be numeric")}
     if (!("numeric" %in% class(z))) {stop("z must be numeric")}
-    if (m==0) { # m = 0 (sympatric)
+    if (m==0) { # m = 0 (budding)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(y)}
         else if (daughter=="right") {return(y + delta_y(c,r,s,a,z,h))}}
       else if (d==1) { # d = 1 (D2 = left, D1 = right)
         if (daughter=="left") {return(y + delta_y(c,r,s,a,z,h))}
         else if (daughter=="right") {return(y)}}}
-    else if (m==1) { # m = 1 (allopatric)
+    else if (m==1) { # m = 1 (splitting)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(y + delta_y(sqrt(1/(1+(1+c)^2)),r,s,a,z,(h+pi)))} # Relative radius of new daughter circle is sqrt(1/(1+(1+c)^2))
         else if (daughter=="right") {return(y + delta_y(sqrt((1+c)^2/(1+(1+c)^2)),r,s,a,z,h))}} # Relative radius of new daughter circle is sqrt((1+c)^2/(1+(1+c)^2))
@@ -103,14 +103,14 @@ transform_node = function(char=NULL, daughter=NULL, d=NULL, m=NULL, c=NULL, h=NU
   else if (char=="a") {
     # make sure alpha is assigned and numeric
     if (!("numeric" %in% class(alpha))) {stop("alpha must be numeric")}
-    if (m==0) { # m = 0 (sympatric)
+    if (m==0) { # m = 0 (budding)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(a)}
-        else if (daughter=="right") {return(alpha)}} # Alpha is small fixed value for sympatric scenario
+        else if (daughter=="right") {return(alpha)}} # Alpha is small fixed value for budding scenario
       else if (d==1) { # d = 1 (D2 = left, D1 = right)
-        if (daughter=="left") {return(alpha)} # Alpha is small fixed value for sympatric scenario
+        if (daughter=="left") {return(alpha)} # Alpha is small fixed value for budding scenario
         else if (daughter=="right") {return(a)}}}
-    else if (m==1) { # m = 1 (allopatric)
+    else if (m==1) { # m = 1 (splitting)
       if (d==0) { # d = 0 (D1 = left, D2 = right)
         if (daughter=="left") {return(a + log((1+c)^2/(1+(1+c)^2)))} # Relative radius of new daughter circle is sqrt((1+c)^2/(1+(1+c)^2))
         else if (daughter=="right") {return(a + log(1/(1+(1+c)^2)))}} # Relative radius of new daughter circle is sqrt(1/(1+(1+c)^2))

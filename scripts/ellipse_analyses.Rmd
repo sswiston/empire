@@ -37,9 +37,10 @@ library(rase)
 ```
 
 ```{r directories, include=FALSE}
-local_directory <- "/Users/Sarah/projects/ellipses/"
-cluster_directory <- "/Volumes/michael.landis/Active/ellipses/"
+local_directory <- "/Users/Sarah/projects/empire/"
+cluster_directory <- "/Volumes/michael.landis/Active/empire/"
 plot_directory <- paste0(local_directory,"figures/")
+maps_directory <- paste0(plot_directory,"range_maps/")
 # Temporary test directory
 data_directory <- paste0(local_directory,"skinks/output/test/")
 # Real analysis directory
@@ -55,7 +56,7 @@ devtools::load_all(paste0(local_directory,"package"))
 
 ```{r plot_settings, include=FALSE}
 plot_themes <- c("dark","light")
-plot_theme <- plot_themes[2]
+plot_theme <- plot_themes[1]
 if (plot_theme == "dark") {
   lines_color <- "white"
   background_color <- "black"
@@ -133,7 +134,7 @@ tree$tip.label <- gsub("_"," ",tree$tip.label)
 ```
 
 ```{r range_data, include=FALSE}
-spheno_shapes <- sf::read_sf(paste0(local_directory,"skinks/ranges/australian_skinks.shp"))
+spheno_shapes <- sf::read_sf(paste0(local_directory,"skinks/data/ranges/australian_skinks.shp"))
 ellipse_data <- read.csv(paste0(local_directory,"skinks/data/ellipse_data.csv"),header=TRUE)
 ```
 
@@ -182,12 +183,12 @@ plot_with_vectors <- ggplot(spheno_shapes) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color))
-ggsave(paste0(plot_directory,"australia_with_vectors.png"),plot_with_vectors,dpi=600)
+ggsave(paste0(maps_directory,"australia_with_vectors.png"),plot_with_vectors,dpi=600)
 
 # Combining
 vectors_and_map <- plot_pca + plot_with_vectors +
   plot_annotation(theme = theme(plot.background = element_rect(color=background_color,fill=background_color,linewidth=2)))
-ggsave(paste0(plot_directory,"vectors_and_map.png"),vectors_and_map,dpi=600,width=7,height=3.5)
+ggsave(paste0(maps_directory,"vectors_and_map.png"),vectors_and_map,dpi=600,width=7,height=3.5)
 ```
 
 ```{r modern_ellipse_plot_nopca, include=FALSE, eval=FALSE}
@@ -216,46 +217,77 @@ plot_without_ranges <- ggplot(spheno_shapes) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color))
-ggsave(paste0(plot_directory,"australia_no_ranges.png"),plot_without_ranges,dpi=600)
+ggsave(paste0(maps_directory,"australia_no_ranges.png"),plot_without_ranges,dpi=600)
 ```
 
 ```{r modern_ellipse_plot_with_ranges, include=FALSE, eval=FALSE}
+# ELLIPSES TO INCLUDE
+# 157: Lerista speciosa (northeast)
+# 27: Ctenotus regius (southwest)
+# 64: Ctenotus nigrilineatus (north)
+# 208: Silvascinus tryoni (central west)
+# 151: Lerista allochira (south)
+# 116: Lerista griffini
+
 plot_with_ranges <- ggplot(spheno_shapes) +
   geom_sf(fill=lines_color,color=NA,alpha=0.04) +
-  geom_sf(data=spheno_shapes[17,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[20,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[46,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[69,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[82,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[157,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[27,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[64,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[208,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[151,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_sf(data=spheno_shapes[116,],fill=color_1,color=color_1,alpha=0.5) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color))
-ggsave(paste0(plot_directory,"australia_with_ranges.png"),plot_with_ranges,dpi=600)
+ggsave(paste0(maps_directory,"australia_with_ranges.png"),plot_with_ranges,dpi=600)
 ```
 
 ```{r modern_ellipse_plot_with_ellipses, include=FALSE, eval=FALSE}
-ellipse_17 <- make_ellipse_coords(ellipse_data$x[17],ellipse_data$y[17],ellipse_data$r[17],ellipse_data$s[17],ellipse_data$a[17])
-ellipse_20 <- make_ellipse_coords(ellipse_data$x[20],ellipse_data$y[20],ellipse_data$r[20],ellipse_data$s[20],ellipse_data$a[20])
-ellipse_46 <- make_ellipse_coords(ellipse_data$x[46],ellipse_data$y[46],ellipse_data$r[46],ellipse_data$s[46],ellipse_data$a[46])
-ellipse_69 <- make_ellipse_coords(ellipse_data$x[69],ellipse_data$y[69],ellipse_data$r[69],ellipse_data$s[69],ellipse_data$a[69])
-ellipse_82 <- make_ellipse_coords(ellipse_data$x[82],ellipse_data$y[82],ellipse_data$r[82],ellipse_data$s[82],ellipse_data$a[82])
+ellipse_157 <- make_ellipse_coords(ellipse_data$x[157],ellipse_data$y[157],ellipse_data$r[157],ellipse_data$s[157],ellipse_data$a[157])
+ellipse_27 <- make_ellipse_coords(ellipse_data$x[27],ellipse_data$y[27],ellipse_data$r[27],ellipse_data$s[27],ellipse_data$a[27])
+ellipse_64 <- make_ellipse_coords(ellipse_data$x[64],ellipse_data$y[64],ellipse_data$r[64],ellipse_data$s[64],ellipse_data$a[64])
+ellipse_208 <- make_ellipse_coords(ellipse_data$x[208],ellipse_data$y[208],ellipse_data$r[208],ellipse_data$s[208],ellipse_data$a[208])
+ellipse_151 <- make_ellipse_coords(ellipse_data$x[151],ellipse_data$y[151],ellipse_data$r[151],ellipse_data$s[151],ellipse_data$a[151])
+ellipse_116 <- make_ellipse_coords(ellipse_data$x[116],ellipse_data$y[116],ellipse_data$r[116],ellipse_data$s[116],ellipse_data$a[116])
 
 plot_with_ellipses <- ggplot(spheno_shapes) +
   geom_sf(fill=lines_color,color=NA,alpha=0.04) +
-  geom_sf(data=spheno_shapes[17,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[20,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[46,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[69,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_sf(data=spheno_shapes[82,],fill=color_1,color=color_1,alpha=0.5) +
-  geom_polygon(data=ellipse_17,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
-  geom_polygon(data=ellipse_20,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
-  geom_polygon(data=ellipse_46,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
-  geom_polygon(data=ellipse_69,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
-  geom_polygon(data=ellipse_82,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[157,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_157,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[27,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_27,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[64,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_64,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[208,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_208,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[151,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_151,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+  geom_sf(data=spheno_shapes[116,],fill=color_1,color=color_1,alpha=0.5) +
+  geom_polygon(data=ellipse_116,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color))
-ggsave(paste0(plot_directory,"australia_with_ellipses.png"),plot_with_ellipses,dpi=600)
+ggsave(paste0(maps_directory,"australia_with_ellipses.png"),plot_with_ellipses,dpi=600)
+```
+
+```{r modern_ellipses_by_species, include=FALSE, message=FALSE, eval=FALSE}
+# PLOTS FOR INDIVIDUAL SPECIES - DO NOT RERUN
+# n_species <- nrow(ellipse_data)
+# species_names <- tree$tip.label
+# for (i in 1:n_species) {
+#   species <- species_names[i]
+#   cat("\r","Species: ", species, " | ", round(as.numeric(i)/n_species*100,0), "%                    ")
+#   ellipse <- make_ellipse_coords(ellipse_data$x[i],ellipse_data$y[i],ellipse_data$r[i],ellipse_data$s[i],ellipse_data$a[i])
+# plot_species <- ggplot(spheno_shapes) +
+#   geom_sf(fill=lines_color,color=NA,alpha=0.04) +
+#   geom_sf(data=spheno_shapes[i,],fill=color_1,color=color_1,alpha=0.5) +
+#   geom_polygon(data=ellipse,aes(x=x,y=y),fill=NA,color=color_2,lwd=2) +
+#   theme_void() +
+#   theme(panel.border = element_rect(color=lines_color,linewidth=2),
+#         panel.background = element_rect(fill=background_color))
+# ggsave(paste0(maps_directory,"species/",i,"_",gsub(" ","_",species),".png"),plot_species,dpi=600)
+# }
 ```
 
 </div>
@@ -291,6 +323,7 @@ data_y <- read.table(paste0(data_directory,"y_log.tsv"),sep="\t",header=TRUE)[bu
 
 ```{r process_directions, eval=FALSE}
 # PROCESSING DIRECTION LINES -- DO NOT RERUN WIHTOUT NEW ANALYSIS
+# NEXT TIME YOU RUN THIS, ADD A PROGRESS BAR
 # data_h_long <- unlist(data_h[-1],use.names=FALSE)
 # start_ind <- ncol(data_h) + 2
 # end_ind <- ncol(data_r)

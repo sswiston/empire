@@ -35,7 +35,7 @@ plot_ellipse <- function(x,y,r,s,a,z=10) {
 #' @param s The s value of the ancestral ellipse, which helps define its oblongness (y coordinate of the tilt vector)
 #' @param a The log area of the ancestral ellipse
 #' @param d The daughter configuration during cladogenesis (0,1), where 0 makes the left daughter D1 and 1 makes the right daughter D1
-#' @param m The cladogenetic mode (0,1), where 0 is sympatric and 1 is allopatric
+#' @param m The cladogenetic mode (0,1), where 0 is budding and 1 is splitting
 #' @param c The c value (not index) of the cladogenetic scenario's concentric circle --> ex. 0.5
 #' @param h The h value (not index) of the cladogenetic scenario's direction line --> ex. pi/4, if required
 #' @param z The height of the tilt vector, default value is 10
@@ -81,7 +81,7 @@ plot_scenario <- function(x,y,r,s,a,d,m,c,h,z=10,alpha=-3) {
 #' @param s The s value of the ancestral ellipse, which helps define its oblongness (y coordinate of the tilt vector)
 #' @param a The log area of the ancestral ellipse
 #' @param d The daughter configuration during cladogenesis (0,1), where 0 makes the left daughter D1 and 1 makes the right daughter D1
-#' @param m The cladogenetic mode (0,1), where 0 is sympatric and 1 is allopatric
+#' @param m The cladogenetic mode (0,1), where 0 is budding and 1 is splitting
 #' @param c The c value (not index) of the cladogenetic scenario's concentric circle --> ex. 0.5
 #' @param h The h value (not index) of the cladogenetic scenario's direction line --> ex. pi/4, if required
 #' @param z The height of the tilt vector, default value is 10
@@ -117,14 +117,14 @@ plot_scenario_annotated <- function(x,y,r,s,a,d,m,c,h,z=10,alpha=-3) {
   y_high_lim <- yhigh + (yhigh - ylow) * 0.1
 
   # d is the daughter configuration during cladogenesis (0,1), where 0 makes the left daughter D1 and 1 makes the right daughter D1
-  # m is the cladogenetic mode (0,1), where 0 is sympatric and 1 is allopatric
+  # m is the cladogenetic mode (0,1), where 0 is budding and 1 is splititng
   # c is the c value (not index) of the cladogenetic scenario's concentric circle --> ex. 0.5
   # h is the h value (not index) of the cladogenetic scenario's direction line --> ex. pi/4, if required
 
   # Gathering information for annotations
   if (d == 0) {left <- "d1"} else {left <- "d2"}
   if (d == 0) {right <- "d2"} else {right <- "d1"}
-  if (m == 0) {mode <- paste0("sympatric, alpha=",alpha)} else {mode <- "allopatric"}
+  if (m == 0) {mode <- paste0("budding, alpha=",alpha)} else {mode <- "splitting"}
 
   # Annotation describing mode and daughter configuration
   top_text <- paste0(
