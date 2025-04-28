@@ -5,7 +5,10 @@ date: "`r Sys.Date()`"
 output: 
   html_document:
       code_folding: "hide"
+      theme: "darkly"
 ---
+
+<body style="background-color:black;">
 
 # {.tabset .tabset-pills}
 
@@ -20,23 +23,29 @@ output:
 </div>
 </div>
 
+### Information
+
+Packages required for these analyses: ape, corrr, devtools, dplyr, empire, ggplot2, ggtree, HDInterval, knitr, mcmcse, patchwork, phytools, rase, sf, spatstat
+
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=FALSE,echo=FALSE,results=FALSE,message=FALSE,warning=FALSE,tidy='styler')
 ```
 
 ```{r packages, eval=TRUE}
-library(sf)
 library(ape)
-library(phytools)
 library(corrr)
+library(devtools)
+library(dplyr)
 library(ggplot2)
-library(patchwork)
+library(ggtree)
 library(HDInterval)
 library(knitr)
-library(devtools)
 library(mcmcse)
-library(spatstat)
+library(patchwork)
+library(phytools)
 library(rase)
+library(sf)
+library(spatstat)
 ```
 
 ```{r directories, eval=TRUE}
@@ -49,9 +58,12 @@ range_plot_directory <- paste0(plot_directory,"ranges/")
 direction_plot_directory <- paste0(plot_directory,"directions/")
 simulation_plot_directory <- paste0(plot_directory,"simulations/")
 other_plot_directory <- paste0(plot_directory,"other/")
+tree_plot_directory <- paste0(plot_directory,"trees/")
 
 cluster_directory <- "/Volumes/michael.landis/Active/empire/"
 data_directory <- paste0(cluster_directory,"skinks/output/skinks.001/")
+data_directory_2 <- paste0(cluster_directory,"skinks/output/skinks.008/")
+data_directory_shuffled <- paste0(cluster_directory,"skinks/output/shuffled.skinks.001/")
 sim_prefix <- paste0(cluster_directory,"simulations/output/full.sim.")
 ```
 
@@ -85,9 +97,13 @@ if (plot_theme == "light") {
 ### Example Ellipses
 
 <div class = "row">
-<div class = "col-md-5">
+<div class = "col-md-7">
 
-Here is an example plot of an ellipse at cladogenesis. The plotting function includes all necessary information about the cladogenetic scenario, and plots what happens in "real" space.
+Here is an example plot of an ellipse at cladogenesis. The plotting function `plot_scenario_annotated()` includes all necessary information about the cladogenetic scenario, and plots what happens in "real" space.
+
+There are two possible cladogenetic modes: budding and splitting. This example uses a splitting scenario, where the ancestral area is partitioned between the daughters, and the daughters are adjacent but not overlapping.
+
+Inheritance under this scenario can be symmetric or asymmetric, determined by the value of $c$. In this case, inheritance is asymmetric.
 
 ```{r example_scenario, echo=TRUE}
 x <- 0
@@ -109,7 +125,7 @@ ggsave(paste0(other_plot_directory,"example_scenario.png"),scenario_plot,dpi=600
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-5">
 
 ```{r example_scenario_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(other_plot_directory,"example_scenario.png"))
@@ -117,6 +133,16 @@ include_graphics(paste0(other_plot_directory,"example_scenario.png"))
 
 </div>
 </div>
+
+
+
+
+
+
+
+
+
+
 
 ## Skink Data
 
@@ -148,9 +174,11 @@ ellipse_data <- read.csv(paste0(local_directory,"skinks/data/ellipse_data.csv"),
 ### Modern Direction Lines
 
 <div class = "row">
-<div class = "col-md-5">
+<div class = "col-md-7">
 
-These are the direction lines (in PCA and map form) for modern-day ellipses.
+These are the direction lines (in PCA and map form) for modern-day ellipses. The axis of greatest variation is (primarily) east-west. Ellipses tend to elongate along the coast, demonstrating that the elongation of these ellipses retains important information about the positioning of species ranges.
+
+Keep in mind that, for both of these plots, ellipse elongation is determined by the *degree* of oblongness, and all vectors are scaled identically. The sizes of ellipses are not used. Therefore, smaller vectors represent ellipses that are rounder in shape, while longer vectors represent ellipses that are very oblong.
 
 ```{r modern_ellipse_plot, echo=TRUE}
 # PCA
@@ -198,6 +226,10 @@ vectors_and_map <- plot_pca + plot_with_vectors +
 ggsave(paste0(range_plot_directory,"vectors_and_map.png"),vectors_and_map,dpi=600,width=7,height=3.5)
 ```
 
+```{r modern_ellipses_plot_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
+```
+
 ```{r modern_ellipse_plot_nopca}
 plot_nopca <- ggplot(ellipse_data) +
   lims(x=c(-30,30),y=c(-30,30)) +
@@ -218,6 +250,11 @@ plot_nopca <- ggplot(ellipse_data) +
 ggsave(paste0(range_plot_directory,"elongation_no_pca.png"),plot_nopca,dpi=600)
 ```
 
+</div>
+<div class = "col-md-5">
+
+Here are some example ranges and their corresponding ellipses. Shown: *Lerista speciosa* (northeast), *Ctenotus regius* (southwest), *Ctenotus nigrilineatus* (north), *Silvascinus tryoni* (central west), *Lerista allochira* (south), *Lerista griffini* (southeast).
+
 ```{r modern_ellipse_plot_without_ranges}
 plot_without_ranges <- ggplot(spheno_shapes) +
   geom_sf(fill=lines_color,color=NA,alpha=0.04) +
@@ -234,7 +271,7 @@ ggsave(paste0(range_plot_directory,"australia_no_ranges.png"),plot_without_range
 # 64: Ctenotus nigrilineatus (north)
 # 208: Silvascinus tryoni (central west)
 # 151: Lerista allochira (south)
-# 116: Lerista griffini
+# 116: Lerista griffini (southeast)
 
 plot_with_ranges <- ggplot(spheno_shapes) +
   geom_sf(fill=lines_color,color=NA,alpha=0.04) +
@@ -250,7 +287,7 @@ plot_with_ranges <- ggplot(spheno_shapes) +
 ggsave(paste0(range_plot_directory,"australia_with_ranges.png"),plot_with_ranges,dpi=600)
 ```
 
-```{r modern_ellipse_plot_with_ellipses}
+```{r modern_ellipse_plot_with_ellipses, echo=TRUE}
 ellipse_157 <- make_ellipse_coords(ellipse_data$x[157],ellipse_data$y[157],ellipse_data$r[157],ellipse_data$s[157],ellipse_data$a[157])
 ellipse_27 <- make_ellipse_coords(ellipse_data$x[27],ellipse_data$y[27],ellipse_data$r[27],ellipse_data$s[27],ellipse_data$a[27])
 ellipse_64 <- make_ellipse_coords(ellipse_data$x[64],ellipse_data$y[64],ellipse_data$r[64],ellipse_data$s[64],ellipse_data$a[64])
@@ -278,6 +315,10 @@ plot_with_ellipses <- ggplot(spheno_shapes) +
 ggsave(paste0(range_plot_directory,"australia_with_ellipses.png"),plot_with_ellipses,dpi=600)
 ```
 
+```{r modern_ellipses_plot_with_ellipses_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(range_plot_directory,"australia_with_ellipses.png"))
+```
+
 ```{r modern_ellipses_by_species}
 # PLOTS FOR INDIVIDUAL SPECIES - DO NOT RERUN
 # n_species <- nrow(ellipse_data)
@@ -298,20 +339,506 @@ ggsave(paste0(range_plot_directory,"australia_with_ellipses.png"),plot_with_elli
 ```
 
 </div>
+</div>
+
+---
+
+### Phylogenetic Tree
+
+Here is the tree being used, including node numbers.
+
+```{r plot_tree, echo=TRUE}
+tree_plot <- ggtree(tree,layout="dendrogram") +
+  geom_tiplab() +
+  geom_nodelab(geom="label",aes(label=node),angle=0,vjust=0) +
+  ggplot2::xlim(10,-40)
+ggsave(paste0(tree_plot_directory,"tree.png"),tree_plot,dpi=600,height=14,width=30)
+```
+
+``` {r tree_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(tree_plot_directory,"tree.png"))
+```
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+## Simulation Analyses
+
+### Coverage
+
+<div class = "row">
+<div class = "col-md-5">
+
+These are the results of the completed coverage experiment. Coverages look good across all parameters. Estimates for rates are very good For OU parameters, estimates for $\mu$ are excellent, and estimates for $\kappa$ are good. Estimates for root values of $r$ and $s$ are good. Estimates for root values of $x$ and $y$ are fairly diffuse. Estimates for root values of $a$ are only good when $a$ has a large value at the root (to be expected).
+
+```{r coverage, echo=TRUE}
+# SIMULATION COVERAGE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
+# burnin <- 10000
+# completed_iterations <- 200000
+# params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
+# simulation_numbers <- sprintf("%03.0f", 1:200)
+# nsims <- length(simulation_numbers)
+# sim_data <- data.frame(matrix(ncol=9,nrow=0))
+# row <- 1
+# for (num in simulation_numbers) {
+#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
+#   directory <- paste0(sim_prefix,num,"/")
+#   iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#   if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#   if (iterations >= completed_iterations) {
+#     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
+#     tree_size <- length(treefile$tip.label)
+#     logfile <- read.csv(paste0(directory,"model_log.tsv"),sep="\t",skipNul=TRUE)
+#     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
+#     true_vals <- c()
+#     for (i in 1:length(truefile)) {
+#       true_vals$param[i] <- truefile[[i]][1]
+#       true_vals$vals[i] <- paste(truefile[[i]][-1],collapse=",")
+#     }
+#     mcmc <- logfile[-c(1:burnin),]
+#     for (param in params_list) {
+#       param_true <- as.numeric(true_vals$vals[which(true_vals$param==param)])
+#       param_mcmc <- mcmc[[param]]
+#       param_est <- mean(param_mcmc)
+#       param_hpd <- hdi(param_mcmc)
+#       param_hpd_low <- param_hpd[[1]]
+#       param_hpd_high <- param_hpd[[2]]
+#       if (param_hpd_low <= param_true & param_true <= param_hpd_high) {param_covered <- TRUE} else {param_covered <- FALSE}
+#       param_ess <- ess(param_mcmc)
+#       param_row <- c(num,param,param_true,param_est,param_hpd_low,param_hpd_high,param_covered,param_ess,tree_size)
+#       sim_data <- rbind(sim_data,param_row)
+#       row <- row + 1
+#     }
+#   }
+# }
+# colnames(sim_data) <- c("sim","param","true","est","hpd_low","hpd_high","covered","ess","tree_size")
+# write.table(sim_data,file=paste0(simulation_output_directory,"sim_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
+```
+
+``` {r coverage_plots, echo=TRUE} 
+sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
+sim_data <- sim_data[which(sim_data$ess >= 200),]
+
+plot_param <- function(param, name) {
+  data_subset <- sim_data[which(sim_data$param == param),]
+  coverage <- round(sum(data_subset$covered==TRUE)/length(data_subset$covered) * 100)
+  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
+  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
+  plot <- ggplot(data_subset, aes(x=true, y=est)) +
+    geom_errorbar(aes(ymin=hpd_low,ymax=hpd_high,col=covered),linewidth=.25,alpha=.5) +
+    geom_point(size=.5,pch=16,alpha=.5,color=lines_color) +
+    geom_abline(slope=1,linewidth=.25,color=lines_color) +
+    labs(x=NULL,y=NULL) +
+    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
+    annotate(geom="text",label=paste(coverage,"%",sep=""),x=max,y=min,hjust="inward",vjust="inward",color=lines_color) +
+    lims(x=c(min,max),y=c(min,max)) +
+    theme_bw() +
+    theme(panel.border = element_rect(color=lines_color,linewidth=2),
+          panel.background = element_rect(fill=background_color,color=NA),
+          axis.text = element_text(color=lines_color),
+          axis.ticks = element_line(color=lines_color),
+          aspect.ratio=1,
+          panel.grid.minor=element_blank(),
+          panel.grid.major=element_blank(),
+          legend.position="none",
+          plot.margin=margin(4,4,4,4,"pt"))
+  return(plot)
+}
+
+plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
+plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
+plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
+plot_mu <- plot_param("mu",bquote(mu))
+plot_kappa <- plot_param("kappa",bquote(kappa))
+plot_root_x <- plot_param("root_x",bquote(root[x]))
+plot_root_y <- plot_param("root_y",bquote(root[y]))
+plot_root_r <- plot_param("root_r",bquote(root[r]))
+plot_root_s <- plot_param("root_s",bquote(root[s]))
+plot_root_a <- plot_param("root_a",bquote(root[a]))
+
+coverage_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4) & theme(plot.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(simulation_plot_directory,"coverage.png"),coverage_plot,dpi=600,width=7,height=5)
+```
+
+</div>
 <div class = "col-md-7">
 
-```{r modern_ellipses_plot_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
+``` {r coverage_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(simulation_plot_directory,"coverage.png"))
 ```
 
 </div>
 </div>
 
+---
+
+### Sensitivity to Extinction
+
+These simulations represent a scenario where 50% of species either go extinct before the present, or are not sampled for other reasons. Root values are not recovered especially well with or without extinction, although extinction does lead to a few extreme outliers which are not seen when the model is correctly specified (for example, inferring root values for $x$ and $y$ on the order of 10,000). It is not clear why this happens.
+
+<div class = "row">
+<div class = "col-md-5">
+
+As expected, rates of evolution of $x$ and $y$ are overestimated, because we fail to observe some cladogenetic events where $x$ and $y$ would change. Additionally, the rate of evolution of $a$ is overestimated. This is likely for the same reason, although the situation is a bit more complex. Generally, cladogenetic scenarios make $a$ smaller, which is counteracted by $\mu$ and $\kappa$ pulling $a$ toward larger values. If we don't observe some cladogenetic events, we might assume that $a$ stays small, and has more time to evolve toward the optimum (which would cause an underestimation of $\kappa$). However, we do not see this; the deterministic part of the OU process seems robust to missing cladogenetic events. Instead, we observe an overestimate of $\sigma_a$. It is also interesting that we overestimate rates of evolution for $r$ and $s$, parameters which do not change at cladogenesis. The model is likely attempting to compensate for shifts in $x$ and $y$ by expanding the influence of the cladogenetic events which are observed, necessitating more elongated ellipses at those times.
+
+```{r sensitivity, echo=TRUE}
+# SIMULATION SENSITIVITY -- DO NOT RERUN WITHOUT NEW SIMULATIONS
+# burnin <- 10000
+# completed_iterations <- 200000
+# params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
+# simulation_numbers <- sprintf("%03.0f", 1:100)
+# nsims <- length(simulation_numbers)
+# sim_data <- data.frame(matrix(ncol=7,nrow=0))
+# row <- 1
+# for (num in simulation_numbers) {
+#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
+#   directory <- paste0(sim_prefix,num,"/")
+#   if (file.exists(paste0(directory,"sensitivity/model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#   } else {iterations <- 0}
+#   if (iterations >= completed_iterations) {
+#     logfile <- read.csv(paste0(directory,"sensitivity/model_log.tsv"),sep="\t",skipNul=TRUE)
+#     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
+#     true_vals <- c()
+#     for (i in 1:length(truefile)) {
+#       true_vals$param[i] <- truefile[[i]][1]
+#       true_vals$vals[i] <- paste(truefile[[i]][-1],collapse=",")
+#     }
+#     mcmc <- logfile[-c(1:burnin),]
+#     for (param in params_list) {
+#       param_true <- as.numeric(true_vals$vals[which(true_vals$param==param)])
+#       param_mcmc <- mcmc[[param]]
+#       param_est <- mean(param_mcmc)
+#       param_hpd <- hdi(param_mcmc)
+#       param_hpd_low <- param_hpd[[1]]
+#       param_hpd_high <- param_hpd[[2]]
+#       param_ess <- ess(param_mcmc)
+#       param_row <- c(num,param,param_true,param_est,param_hpd_low,param_hpd_high,param_ess)
+#       sim_data <- rbind(sim_data,param_row)
+#       row <- row + 1
+#     }
+#   }
+# }
+# colnames(sim_data) <- c("sim","param","true","est","hpd_low","hpd_high","ess")
+# write.table(sim_data,file=paste0(simulation_output_directory,"sensitivity_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
+```
+
+``` {r sensitivity_plots, echo=TRUE} 
+sim_data <- read.csv(paste0(simulation_output_directory,"sensitivity_results.tsv"),sep="\t")
+sim_data <- sim_data[which(sim_data$ess >= 200),]
+
+plot_param <- function(param, name) {
+  data_subset <- sim_data[which(sim_data$param == param),]
+  high_vals <- sort(data_subset$hpd_high)
+  low_vals <- sort(data_subset$hpd_low)
+  range <- c(low_vals[3],high_vals[length(high_vals)-2])
+  high_limit <- high_vals[length(high_vals)-2] + .5 * (range[2] - range[1])
+  low_limit <- low_vals[3] - .5 * (range[2] - range[1])
+  keep <- c()
+  for (i in 1:nrow(data_subset)) {
+    keep[i] <- TRUE
+    if (data_subset$hpd_high[i] > high_limit) {
+      keep[i] <- FALSE
+    }
+    if (data_subset$hpd_low[i] < low_limit) {
+      keep[i] <- FALSE
+    }
+  }
+  n_outliers <- sum(keep==FALSE)
+  data_subset <- data_subset[keep==TRUE,]
+  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
+  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
+  plot <- ggplot(data_subset, aes(x=true, y=est)) +
+    geom_errorbar(aes(ymin=hpd_low,ymax=hpd_high),linewidth=.25,alpha=.5,color=lines_color) +
+    geom_point(size=.5,pch=16,alpha=.5,color=lines_color) +
+    geom_abline(slope=1,linewidth=.25,color=lines_color) +
+    labs(x=NULL,y=NULL) +
+    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
+    annotate(geom="text",label=paste("Outliers: ",n_outliers),x=max,y=min,hjust="inward",vjust="inward",color=lines_color) +
+    lims(x=c(min,max),y=c(min,max)) +
+    theme_bw() +
+    theme(panel.border = element_rect(color=lines_color,linewidth=2),
+          panel.background = element_rect(fill=background_color,color=NA),
+          axis.text = element_text(color=lines_color),
+          axis.ticks = element_line(color=lines_color),
+          aspect.ratio=1,
+          panel.grid.minor=element_blank(),
+          panel.grid.major=element_blank(),
+          legend.position="none",
+          plot.margin=margin(4,4,4,4,"pt"))
+  return(plot)
+}
+
+plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
+plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
+plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
+plot_mu <- plot_param("mu",bquote(mu))
+plot_kappa <- plot_param("kappa",bquote(kappa))
+plot_root_x <- plot_param("root_x",bquote(root[x]))
+plot_root_y <- plot_param("root_y",bquote(root[y]))
+plot_root_r <- plot_param("root_r",bquote(root[r]))
+plot_root_s <- plot_param("root_s",bquote(root[s]))
+plot_root_a <- plot_param("root_a",bquote(root[a]))
+
+sensitivity_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4) & theme(plot.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(simulation_plot_directory,"sensitivity.png"),sensitivity_plot,dpi=600,width=7,height=5)
+```
+
+</div>
+<div class = "col-md-7">
+
+``` {r sensitivity_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(simulation_plot_directory,"sensitivity.png"))
+```
+
+</div>
+</div>
+
+---
+
+### Tree sizes
+
+<div class = "row">
+<div class = "col-md-5">
+
+This plot uses the same simulations as the coverage plot, but instead shows the quality of estimates based on tree sizes. Most trees (all between 20 and 250 taxa) behave similarly. With smaller trees, it is somewhat easier to estimate the root, and somewhat more difficult to estimate rate parameters. This is what we would expect.
+
+``` {r treesize_plots, echo=TRUE} 
+sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
+sim_data <- sim_data[which(sim_data$ess >= 200),]
+
+plot_param <- function(param, name) {
+  data_subset <- sim_data[which(sim_data$param == param),]
+  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
+  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
+  plot <- ggplot(data_subset, aes(x=true, y=est)) +
+    geom_point(size=.5,pch=16,aes(color=tree_size)) +
+    #scale_color_gradient(low="yellow",high="blue") +
+    geom_abline(slope=1,linewidth=.25,color=lines_color) +
+    labs(x=NULL,y=NULL) +
+    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
+    lims(x=c(min,max),y=c(min,max)) +
+    theme_bw() +
+    theme(panel.border = element_rect(color=lines_color,linewidth=2),
+          panel.background = element_rect(fill=background_color,color=NA),
+          axis.text = element_text(color=lines_color),
+          axis.ticks = element_line(color=lines_color),
+          aspect.ratio=1,
+          panel.grid.minor=element_blank(),
+          panel.grid.major=element_blank(),
+          legend.position="none",
+          plot.margin=margin(4,4,4,4,"pt"))
+  return(plot)
+}
+
+plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
+plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
+plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
+plot_mu <- plot_param("mu",bquote(mu))
+plot_kappa <- plot_param("kappa",bquote(kappa))
+plot_root_x <- plot_param("root_x",bquote(root[x]))
+plot_root_y <- plot_param("root_y",bquote(root[y]))
+plot_root_r <- plot_param("root_r",bquote(root[r]))
+plot_root_s <- plot_param("root_s",bquote(root[s]))
+plot_root_a <- plot_param("root_a",bquote(root[a]))
+
+treesize_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + 
+  plot_layout(ncol = 4) + 
+  plot_layout(guides="collect") & 
+  labs(color="Tree Size") & 
+  theme(legend.position="bottom",
+        legend.background=element_rect(color=NA,fill=NA),
+        legend.text=element_text(color=lines_color),
+        legend.title=element_text(color=lines_color),
+        plot.background=element_rect(fill=background_color,color=NA)) & 
+  scale_color_gradient(low="yellow",
+                       high="blue",
+                       aesthetics="color",
+                       limits=c(20,250))
+ggsave(paste0(simulation_plot_directory,"tree_size.png"),treesize_plot,dpi=600,width=7,height=5.5)
+```
+
+</div>
+<div class = "col-md-7">
+
+``` {r treesize_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(simulation_plot_directory,"tree_size.png"))
+```
+
+</div>
+</div>
+
+---
+
+### Comparison to *rase*
+
+<div class = "row">
+<div class = "col-md-7">
+
+Many of these *rase* analyses did not converge. Some had no variability at all, and many had very low ESS. Also, some of the estimates were very poor. I need to examine these, and see if I can improve the *rase* analyses to provide a fair comparison. At the very least, I will perform *rase* on the remainder of the 200 simulations. So far, it looks like EMPIRE performs much better than RASE on data simulated under EMPIRE (to be expected). Interestingly, RASE not only overestimates rates (expected), but also misestimates root values substantially (less expected).
+
+```{r rase, echo=TRUE}
+# SIMULATION RASE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
+# params_list <- c("sigma_x","sigma_y","root_x","root_y")
+# sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
+# sim_data <- sim_data[which(sim_data$ess >= 200),]
+# sim_data <- sim_data[which(sim_data$param %in% params_list),]
+# sim_data <- sim_data[,c(1:4)]
+# sim_data <- cbind(sim_data,rep(NA,nrow(sim_data)),rep(NA,nrow(sim_data)))
+# colnames(sim_data) <- c("sim","param","true","EMPIRE","rase","ess")
+# burnin <- 100
+# simulation_numbers <- sprintf("%03.0f", 1:100)
+# nsims <- length(simulation_numbers)
+# for (num in simulation_numbers) {
+#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
+#   directory <- paste0(sim_prefix,num,"/")
+#   logfile <- read.csv(paste0(directory,"rase.csv"),sep=",",skipNul=TRUE)
+#   root_node <- (ncol(logfile))/2 + 1
+#   root_x_colname <- paste0("n",root_node,"_x")
+#   root_y_colname <- paste0("n",root_node,"_y")
+#   root_x_ind <- which(colnames(logfile)==root_x_colname)
+#   root_y_ind <- which(colnames(logfile)==root_y_colname)
+#   sigma2x_ind <- which(colnames(logfile)=="sigma2x")
+#   sigma2y_ind <- which(colnames(logfile)=="sigma2y")
+#   mcmc <- logfile[-c(1:burnin),c(root_x_ind,root_y_ind,sigma2x_ind,sigma2y_ind)]
+#   colnames(mcmc) <- c("root_x","root_y","sigma2_x","sigma2_y")
+#   mcmc$sigma_x <- lapply(mcmc$sigma2_x,"sqrt")
+#   mcmc$sigma_y <- lapply(mcmc$sigma2_y,"sqrt")
+#   for (param in params_list) {
+#     row <- which(sim_data$sim==as.numeric(num) & sim_data$param==param)
+#     if (length(row)==1) {
+#       param_mcmc <- unlist(mcmc[[param]])
+#       param_est <- mean(param_mcmc)
+#       param_ess <- ess(param_mcmc)
+#       sim_data$rase[row] <- param_est
+#       sim_data$ess[row] <- param_ess
+#     }
+#   }
+# }
+# sim_data <- sim_data[which(!is.na(sim_data$rase)),]
+# write.table(sim_data,file=paste0(simulation_output_directory,"rase_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
+```
+
+``` {r rase_plots, echo=TRUE} 
+sim_data <- read.csv(paste0(simulation_output_directory,"rase_results.tsv"),sep="\t")
+sim_data <- sim_data[which(sim_data$ess >= 25),]
+
+plot_param <- function(param, name) {
+  data_subset <- sim_data[which(sim_data$param == param),]
+  model_data <- data.frame(cbind(true=c(data_subset$true,data_subset$true),est=c(data_subset$EMPIRE,data_subset$rase),model=c(rep("EMPIRE",nrow(data_subset)),rep("RASE",nrow(data_subset)))))
+  model_data$true <- as.numeric(model_data$true)
+  model_data$est <- as.numeric(model_data$est)
+  quantiles <- quantile(model_data$est,c(.25,.75),names=FALSE)
+  min <- quantiles[1] - (quantiles[2] - quantiles[1])
+  max <- quantiles[2] + (quantiles[2] - quantiles[1])
+  keep <- c()
+  outliers <- c()
+  for (i in 1:nrow(model_data)) {
+    #keep[i] <- TRUE
+    if (model_data$est[i] > max) {
+      #keep[i] <- FALSE
+      outliers <- c(outliers,model_data$model[i])
+    }
+    if (model_data$est[i] < min) {
+      #keep[i] <- FALSE
+      outliers <- c(outliers,model_data$model[i])
+    }
+  }
+  n_rase_outliers <- sum(outliers=="RASE")
+  n_empire_outliers <- sum(outliers=="EMPIRE")
+  bottom_text <- paste0(
+    "RASE Outliers: ",n_rase_outliers,"\n",
+    "EMPIRE Outliers: ",n_empire_outliers,"\n"
+  )
+  #model_data <- model_data[keep==TRUE,]
+  model_data$model <- as.factor(model_data$model)
+  plot <- ggplot(model_data, aes(x=true, y=est)) +
+    geom_point(pch=16,aes(color=model)) +
+    guides(color=guide_legend(override.aes=list(size=5))) +
+    geom_abline(slope=1,linewidth=.25,color=lines_color) +
+    labs(x=NULL,y=NULL,color="Model:") +
+    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
+    annotate(geom="text",label=bottom_text,x=max,y=min,hjust="inward",vjust="inward",color=lines_color) +
+    lims(x=c(min,max),y=c(min,max)) +
+    theme_bw() +
+    theme(panel.border = element_rect(color=lines_color,linewidth=2),
+          panel.background = element_rect(fill=background_color,color=NA),
+          axis.text = element_text(color=lines_color),
+          axis.ticks = element_line(color=lines_color),
+          aspect.ratio=1,
+          panel.grid.minor=element_blank(),
+          panel.grid.major=element_blank(),
+          legend.position="none",
+          plot.margin=margin(4,4,4,4,"pt"))
+  return(plot)
+}
+
+plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+plot_root_x <- plot_param("root_x",bquote(root[x]))
+plot_root_y <- plot_param("root_y",bquote(root[y]))
+
+rase_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + 
+  plot_layout(ncol = 2, guides="collect") & 
+  theme(legend.position="bottom",
+        legend.background=element_rect(color=NA,fill=NA),
+        legend.key=element_rect(fill=NA),
+        legend.text=element_text(color=lines_color),
+        legend.title=element_text(color=lines_color),
+        plot.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(simulation_plot_directory,"rase.png"),rase_plot,dpi=600,width=7,height=7.5)
+```
+
+</div>
+<div class = "col-md-5">
+
+``` {r rase_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(simulation_plot_directory,"rase.png"))
+```
+
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
 ## Skink Analyses
 
 ### Direction Lines
 
-These are results for a single analysis. Direction line plots are averaged over the entire posterior sample for all nodes, but the posterior is thinned (1 per 500 iterations) to reduce computation time.
+These are results for the empirical analyses of *Sphenomorphus* skinks. Direction line plots are averaged over the entire posterior sample for all nodes, but the posterior is thinned (1 per 500 iterations) to reduce computation time.
+
+---
+
+<div class = "row">
+<div class = "col-md-3">
+
+For this plot, rather than using raw direction lines, we use *projected* direction lines, binning them according to which absolute direction line is closest. Note that 2*pi = 0.
 
 ```{r skink_results}
 # SKINK RESULTS -- DO NOT RERUN WITHOUT NEW ANALYSES
@@ -359,8 +886,8 @@ These are results for a single analysis. Direction line plots are averaged over 
 #   fx <- cos(theta)
 #   fy <- sin(theta)
 #   fz <- r * fx + s * fy
-#   proj_x <- x + fx + r * fz / z^2
-#   proj_y <- y + fy + s * fz / z^2
+#   proj_x <- fx + r * fz / z^2
+#   proj_y <- fy + s * fz / z^2
 #   scale <- sqrt(proj_x^2 + proj_y^2)
 #   true_x <- proj_x/scale
 #   true_y <- proj_y/scale
@@ -392,93 +919,22 @@ These are results for a single analysis. Direction line plots are averaged over 
 #   direction_data$true_angle[i] <- direction_info[3]
 #   direction_data$true_selection[i] <- direction_info[4]
 # }
-# 
+# n_tips <- length(tree$tip.label)
+# n_nodes <- tree$Nnode
+# node_numbers <- c((n_tips+1):(n_tips+n_nodes))
+# total_length <- nrow(direction_data)
+# iter_per_node <- total_length / n_nodes
+# nodes_vector <- c()
+# for (num in node_numbers) {
+#   nodes_vector <- c(nodes_vector,rep(num,iter_per_node))
+# }
+# direction_data$node <- nodes_vector
 # write.csv(direction_data,paste0(skink_output_directory,"processed_directions.csv"),row.names=FALSE,quote=FALSE)
 ```
 
 ```{r direction_data, eval=TRUE}
 direction_data <- read.csv(paste0(skink_output_directory,"processed_directions.csv"),header=TRUE)
 ```
-
----
-
-<div class = "row">
-<div class = "col-md-5">
-
-This plot uses raw direction lines. Since daughters may move in either direction along the direction line, we combine direction lines that are symmetric about the origin (e.g. 0 and pi).
-
-```{r direction_lines, echo=TRUE}
-# Getting direction line counts
-count_0 <- sum(direction_data$selection == 0)
-count_1 <- sum(direction_data$selection == 1)
-count_2 <- sum(direction_data$selection == 2)
-count_3 <- sum(direction_data$selection == 3)
-
-# Performing Chi Square test
-p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
-if (p < 0.001) {
-  p_string <- paste0("chi-squared test, p < 0.001")
-} else {
-  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
-}
-
-# Getting densities
-lines <- c("0","1","2","3")
-counts <- c(count_0,count_1,count_2,count_3)
-density <- counts / sum(counts)
-count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
-count_data$density <- as.numeric(count_data$density)
-
-# Plotting bars
-bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
-  geom_col() +
-  labs(y="Proportion") +
-  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
-  labs(title=p_string,color=lines_color) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_text(color=lines_color,size=16),
-        axis.ticks.y = element_line(color=lines_color),
-        axis.title = element_text(color=lines_color),
-        panel.grid = element_blank(),
-        panel.border = element_rect(color=lines_color,linewidth=2),
-        plot.background = element_rect(fill=background_color,color=background_color),
-        panel.background = element_rect(fill=background_color),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(size=16),
-        legend.position = "none",
-        plot.title = element_text(hjust = 1,color=lines_color))
-
-# Direction lines for plotting
-line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
-direction_plot <- ggplot(line_data) +
-  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
-  lims(x=c(0,4),y=c(-0.5,0.5)) +
-  coord_fixed() +
-  theme_void()
-
-# Combining direction lines with bars
-plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
-ggsave(paste0(direction_plot_directory,"direction_probs.png"),plot_with_arrows,dpi=600)
-```
-
-</div>
-<div class = "col-md-7">
-
-```{r direction_lines_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(direction_plot_directory,"direction_probs.png"))
-```
-
-</div>
-</div>
-
----
-
-<div class = "row">
-<div class = "col-md-5">
-
-For this plot, rather than using raw direction lines, we use *projected* direction lines, binning them according to which absolute direction line is closest. Note that 2*pi = 0.
 
 ```{r true_direction_lines, echo=TRUE}
 # Getting true direction line counts
@@ -537,10 +993,378 @@ ggsave(paste0(direction_plot_directory,"true_direction_probs.png"),plot_with_arr
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-3">
 
-```{r true_direction_lines_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(direction_plot_directory,"true_direction_probs.png"))
+This graph uses a different skink analysis, just to demonstrate that the results are consistent.
+
+```{r skink_results_2}
+# SKINK RESULTS -- DO NOT RERUN WITHOUT NEW ANALYSES
+# burnin <- 20000
+# length <- 200000
+# data_model <- read.table(paste0(data_directory_2,"model_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_d <- read.table(paste0(data_directory_2,"d_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_m <- read.table(paste0(data_directory_2,"m_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_c <- read.table(paste0(data_directory_2,"c_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_h <- read.table(paste0(data_directory_2,"h_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_r <- read.table(paste0(data_directory_2,"r_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_s <- read.table(paste0(data_directory_2,"s_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_a <- read.table(paste0(data_directory_2,"a_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_x <- read.table(paste0(data_directory_2,"x_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_y <- read.table(paste0(data_directory_2,"y_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+```
+
+```{r process_directions_2, echo=TRUE}
+# PROCESSING DIRECTION LINES -- DO NOT RERUN WIHTOUT NEW ANALYSIS
+# data_h_subset <- data_h[-1]
+# start_ind <- ncol(data_h) + 2
+# end_ind <- ncol(data_r)
+# data_r_subset <- data_r[start_ind:end_ind]
+# data_s_subset <- data_s[start_ind:end_ind]
+# start_loc_ind <- ncol(data_x) - ncol(data_h_subset) + 1
+# end_loc_ind <- ncol(data_x)
+# data_x_subset <- data_x[start_loc_ind:end_loc_ind]
+# data_y_subset <- data_y[start_loc_ind:end_loc_ind]
+# 
+# data_h_thinned <- data_h_subset[seq(1,(nrow(data_h_subset)-1),500),]
+# data_r_thinned <- data_r_subset[seq(1,(nrow(data_r_subset)-1),500),]
+# data_s_thinned <- data_s_subset[seq(1,(nrow(data_s_subset)-1),500),]
+# data_x_thinned <- data_x_subset[seq(1,(nrow(data_x_subset)-1),500),]
+# data_y_thinned <- data_y_subset[seq(1,(nrow(data_y_subset)-1),500),]
+# 
+# data_h_long <- unlist(data_h_thinned,use.names=FALSE)
+# data_r_long <- unlist(data_r_thinned,use.names=FALSE)
+# data_s_long <- unlist(data_s_thinned,use.names=FALSE)
+# data_x_long <- unlist(data_x_thinned,use.names=FALSE)
+# data_y_long <- unlist(data_y_thinned,use.names=FALSE)
+# direction_data_2 <- data.frame(cbind(h=data_h_long, r=data_r_long, s=data_s_long, x=data_x_long, y=data_y_long))
+# 
+# process_direction <- function(h,r,s,z,hval_extended){
+#   theta <- hval_extended[h+1]
+#   fx <- cos(theta)
+#   fy <- sin(theta)
+#   fz <- r * fx + s * fy
+#   proj_x <- fx + r * fz / z^2
+#   proj_y <- fy + s * fz / z^2
+#   scale <- sqrt(proj_x^2 + proj_y^2)
+#   true_x <- proj_x/scale
+#   true_y <- proj_y/scale
+#   true_angle <- atan2(true_y,true_x)
+#   if (true_angle < 0) {true_angle <- (2 * pi + true_angle)}
+#   true_selection <- which(abs(hval_extended - true_angle) == min(abs(hval_extended - true_angle))) - 1
+#   if (true_selection == (length(hval_extended)-1)) {true_selection <- 0}
+#   if (true_selection == 4) {true_selection <- 0}
+#   if (true_selection == 5) {true_selection <- 1}
+#   if (true_selection == 6) {true_selection <- 2}
+#   if (true_selection == 7) {true_selection <- 3}
+#   direction_info <- c(true_x,true_y,true_angle,true_selection)
+# }
+# 
+# hval_extended <- c(0,pi/4,pi/2,3*pi/4,pi,5*pi/4,3*pi/2,7*pi/4,2*pi)
+# z <- 10
+# data_length <- nrow(direction_data_2)
+# for (i in 1:data_length) {
+#   cat("\r","Row ", i, " | ", round(as.numeric(i)/data_length*100,0), "%")
+#   selection <- direction_data_2$h[i]
+#   if (selection == 4) {selection <- 0}
+#   if (selection == 5) {selection <- 1}
+#   if (selection == 6) {selection <- 2}
+#   if (selection == 7) {selection <- 3}
+#   direction_data_2$selection[i] <- selection
+#   direction_info <- process_direction(direction_data_2$h[i],direction_data_2$r[i],direction_data_2$s[i],z,hval_extended)
+#   direction_data_2$true_x[i] <- direction_info[1]
+#   direction_data_2$true_y[i] <- direction_info[2]
+#   direction_data_2$true_angle[i] <- direction_info[3]
+#   direction_data_2$true_selection[i] <- direction_info[4]
+# }
+# n_tips <- length(tree$tip.label)
+# n_nodes <- tree$Nnode
+# node_numbers <- c((n_tips+1):(n_tips+n_nodes))
+# total_length <- nrow(direction_data_2)
+# iter_per_node <- total_length / n_nodes
+# nodes_vector <- c()
+# for (num in node_numbers) {
+#   nodes_vector <- c(nodes_vector,rep(num,iter_per_node))
+# }
+# direction_data_2$node <- nodes_vector
+# write.csv(direction_data_2,paste0(skink_output_directory,"processed_directions_2.csv"),row.names=FALSE,quote=FALSE)
+```
+
+```{r direction_data_2, eval=TRUE}
+direction_data_2 <- read.csv(paste0(skink_output_directory,"processed_directions_2.csv"),header=TRUE)
+```
+
+```{r true_direction_lines_2, echo=TRUE}
+# Getting true direction line counts
+count_0 <- sum(direction_data_2$true_selection == 0)
+count_1 <- sum(direction_data_2$true_selection == 1)
+count_2 <- sum(direction_data_2$true_selection == 2)
+count_3 <- sum(direction_data_2$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"true_direction_probs_2.png"),plot_with_arrows,dpi=600)
+```
+
+</div>
+<div class = "col-md-3">
+
+This plot uses raw direction lines.
+
+```{r direction_lines, echo=TRUE}
+# Getting direction line counts
+count_0 <- sum(direction_data$selection == 0)
+count_1 <- sum(direction_data$selection == 1)
+count_2 <- sum(direction_data$selection == 2)
+count_3 <- sum(direction_data$selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"direction_probs.png"),plot_with_arrows,dpi=600)
+```
+
+</div>
+<div class = "col-md-3">
+
+This analysis uses the skink dataset, but the tips were shuffled, removing phylogenetic signal.
+
+```{r skink_results_shuffled}
+# SKINK RESULTS -- DO NOT RERUN WITHOUT NEW ANALYSES
+# burnin <- 20000
+# length <- 200000
+# data_model <- read.table(paste0(data_directory_shuffled,"model_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_d <- read.table(paste0(data_directory_shuffled,"d_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_m <- read.table(paste0(data_directory_shuffled,"m_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_c <- read.table(paste0(data_directory_shuffled,"c_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_h <- read.table(paste0(data_directory_shuffled,"h_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_r <- read.table(paste0(data_directory_shuffled,"r_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_s <- read.table(paste0(data_directory_shuffled,"s_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_a <- read.table(paste0(data_directory_shuffled,"a_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_x <- read.table(paste0(data_directory_shuffled,"x_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_y <- read.table(paste0(data_directory_shuffled,"y_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+```
+
+```{r process_directions_shuffled, echo=TRUE}
+# PROCESSING DIRECTION LINES -- DO NOT RERUN WIHTOUT NEW ANALYSIS
+# data_h_subset <- data_h[-1]
+# start_ind <- ncol(data_h) + 2
+# end_ind <- ncol(data_r)
+# data_r_subset <- data_r[start_ind:end_ind]
+# data_s_subset <- data_s[start_ind:end_ind]
+# start_loc_ind <- ncol(data_x) - ncol(data_h_subset) + 1
+# end_loc_ind <- ncol(data_x)
+# data_x_subset <- data_x[start_loc_ind:end_loc_ind]
+# data_y_subset <- data_y[start_loc_ind:end_loc_ind]
+# 
+# data_h_thinned <- data_h_subset[seq(1,(nrow(data_h_subset)-1),500),]
+# data_r_thinned <- data_r_subset[seq(1,(nrow(data_r_subset)-1),500),]
+# data_s_thinned <- data_s_subset[seq(1,(nrow(data_s_subset)-1),500),]
+# data_x_thinned <- data_x_subset[seq(1,(nrow(data_x_subset)-1),500),]
+# data_y_thinned <- data_y_subset[seq(1,(nrow(data_y_subset)-1),500),]
+# 
+# data_h_long <- unlist(data_h_thinned,use.names=FALSE)
+# data_r_long <- unlist(data_r_thinned,use.names=FALSE)
+# data_s_long <- unlist(data_s_thinned,use.names=FALSE)
+# data_x_long <- unlist(data_x_thinned,use.names=FALSE)
+# data_y_long <- unlist(data_y_thinned,use.names=FALSE)
+# direction_data_shuffled <- data.frame(cbind(h=data_h_long, r=data_r_long, s=data_s_long, x=data_x_long, y=data_y_long))
+# 
+# process_direction <- function(h,r,s,z,hval_extended){
+#   theta <- hval_extended[h+1]
+#   fx <- cos(theta)
+#   fy <- sin(theta)
+#   fz <- r * fx + s * fy
+#   proj_x <- fx + r * fz / z^2
+#   proj_y <- fy + s * fz / z^2
+#   scale <- sqrt(proj_x^2 + proj_y^2)
+#   true_x <- proj_x/scale
+#   true_y <- proj_y/scale
+#   true_angle <- atan2(true_y,true_x)
+#   if (true_angle < 0) {true_angle <- (2 * pi + true_angle)}
+#   true_selection <- which(abs(hval_extended - true_angle) == min(abs(hval_extended - true_angle))) - 1
+#   if (true_selection == (length(hval_extended)-1)) {true_selection <- 0}
+#   if (true_selection == 4) {true_selection <- 0}
+#   if (true_selection == 5) {true_selection <- 1}
+#   if (true_selection == 6) {true_selection <- 2}
+#   if (true_selection == 7) {true_selection <- 3}
+#   direction_info <- c(true_x,true_y,true_angle,true_selection)
+# }
+# 
+# hval_extended <- c(0,pi/4,pi/2,3*pi/4,pi,5*pi/4,3*pi/2,7*pi/4,2*pi)
+# z <- 10
+# data_length <- nrow(direction_data_shuffled)
+# for (i in 1:data_length) {
+#   cat("\r","Row ", i, " | ", round(as.numeric(i)/data_length*100,0), "%")
+#   selection <- direction_data_shuffled$h[i]
+#   if (selection == 4) {selection <- 0}
+#   if (selection == 5) {selection <- 1}
+#   if (selection == 6) {selection <- 2}
+#   if (selection == 7) {selection <- 3}
+#   direction_data_shuffled$selection[i] <- selection
+#   direction_info <- process_direction(direction_data_shuffled$h[i],direction_data_shuffled$r[i],direction_data_shuffled$s[i],z,hval_extended)
+#   direction_data_shuffled$true_x[i] <- direction_info[1]
+#   direction_data_shuffled$true_y[i] <- direction_info[2]
+#   direction_data_shuffled$true_angle[i] <- direction_info[3]
+#   direction_data_shuffled$true_selection[i] <- direction_info[4]
+# }
+# n_tips <- length(tree$tip.label)
+# n_nodes <- tree$Nnode
+# node_numbers <- c((n_tips+1):(n_tips+n_nodes))
+# total_length <- nrow(direction_data_shuffled)
+# iter_per_node <- total_length / n_nodes
+# nodes_vector <- c()
+# for (num in node_numbers) {
+#   nodes_vector <- c(nodes_vector,rep(num,iter_per_node))
+# }
+# direction_data_shuffled$node <- nodes_vector
+# write.csv(direction_data_shuffled,paste0(skink_output_directory,"processed_directions_shuffled.csv"),row.names=FALSE,quote=FALSE)
+```
+
+```{r direction_data_shuffled, eval=TRUE}
+direction_data_shuffled <- read.csv(paste0(skink_output_directory,"processed_directions_shuffled.csv"),header=TRUE)
+```
+
+```{r true_direction_lines_shuffled, echo=TRUE}
+# Getting true direction line counts
+count_0 <- sum(direction_data_shuffled$true_selection == 0)
+count_1 <- sum(direction_data_shuffled$true_selection == 1)
+count_2 <- sum(direction_data_shuffled$true_selection == 2)
+count_3 <- sum(direction_data_shuffled$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"true_direction_probs_shuffled.png"),plot_with_arrows,dpi=600)
 ```
 
 </div>
@@ -549,7 +1373,40 @@ include_graphics(paste0(direction_plot_directory,"true_direction_probs.png"))
 ---
 
 <div class = "row">
-<div class = "col-md-5">
+<div class = "col-md-3">
+
+```{r true_direction_lines_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"true_direction_probs.png"))
+```
+
+</div>
+<div class = "col-md-3">
+
+```{r true_direction_lines_show_2, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"true_direction_probs_2.png"))
+```
+
+</div>
+<div class = "col-md-3">
+
+```{r direction_lines_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"direction_probs.png"))
+```
+
+</div>
+<div class = "col-md-3">
+
+```{r true_direction_lines_show_shuffled, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"true_direction_probs_shuffled.png"))
+```
+
+</div>
+</div>
+
+---
+
+<div class = "row">
+<div class = "col-md-10">
 
 For this plot, we take the projected direction lines (un-binned) and plot them on a circle. This plot has *not* been made symmetric (but maybe should)? It doesn't show much. I want to make a new one with highest posterior estimates instead of full posterior distributions at nodes.
 
@@ -565,7 +1422,7 @@ ggsave(paste0(direction_plot_directory,"direction_circle.png"),direction_plot,dp
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-2">
 
 ```{r direction_circle_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(direction_plot_directory,"direction_circle.png"))
@@ -579,9 +1436,9 @@ include_graphics(paste0(direction_plot_directory,"direction_circle.png"))
 ### Direction Maps
 
 <div class = "row">
-<div class = "col-md-5">
+<div class = "col-md-7">
 
-These are the directions mapped onto Australia.
+These are the directions mapped onto Australia. Right now I don't think there's much here, but I'm going to make similar plots with only the highest posterior for each node. I may even map whole ancestral ellipses, rather than just the centroids with the directions of splitting.
 
 ```{r direction_map, echo=TRUE}
 xmin <- min(direction_data$x)
@@ -658,7 +1515,7 @@ ggsave(paste0(direction_plot_directory,"map_3.png"),plot_map_3,dpi=600,width=7,h
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-5">
 
 ```{r direction_map_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(direction_plot_directory,"map_all.png"))
@@ -700,10 +1557,254 @@ include_graphics(paste0(direction_plot_directory,"map_3.png"))
 
 ---
 
-### Ancestral State Reconstruction (not functional)
+### Ancestral State Reconstruction
+
+We performed ancestral state reconstructions for the ancestral ellipses going *into* phylogenetic nodes. First, we determined the discrete scenario (unique combination of $(d,m,c,h)$) with the highest posterior probability. Then we took the mean values for each continuous character under that scenario. We also calculate total posterior means for each continuous character, but we do not use this to make the maps.
+
+```{r skink_results_for_nodes}
+# SKINK RESULTS -- DO NOT RERUN WITHOUT NEW ANALYSES
+# burnin <- 20000
+# length <- 200000
+# data_model <- read.table(paste0(data_directory,"model_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_d <- read.table(paste0(data_directory,"d_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_m <- read.table(paste0(data_directory,"m_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_c <- read.table(paste0(data_directory,"c_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_h <- read.table(paste0(data_directory,"h_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_r <- read.table(paste0(data_directory,"r_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_s <- read.table(paste0(data_directory,"s_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_a <- read.table(paste0(data_directory,"a_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_x <- read.table(paste0(data_directory,"x_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# data_y <- read.table(paste0(data_directory,"y_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+```
+
+```{r data_by_node, echo=TRUE}
+# PER-NODE SKINK RESULTS -- DO NOT RERUN WITHOUT NEW ANALYSES
+# function for getting directions
+# process_direction <- function(h,r,s,z,hval_extended){
+#   theta <- hval_extended[h+1]
+#   fx <- cos(theta)
+#   fy <- sin(theta)
+#   fz <- r * fx + s * fy
+#   proj_x <- fx + r * fz / z^2
+#   proj_y <- fy + s * fz / z^2
+#   scale <- sqrt(proj_x^2 + proj_y^2)
+#   true_x <- proj_x/scale
+#   true_y <- proj_y/scale
+#   true_angle <- atan2(true_y,true_x)
+#   if (true_angle < 0) {true_angle <- (2 * pi + true_angle)}
+#   true_selection <- which(abs(hval_extended - true_angle) == min(abs(hval_extended - true_angle))) - 1
+#   if (true_selection == (length(hval_extended)-1)) {true_selection <- 0}
+#   if (true_selection == 4) {true_selection <- 0}
+#   if (true_selection == 5) {true_selection <- 1}
+#   if (true_selection == 6) {true_selection <- 2}
+#   if (true_selection == 7) {true_selection <- 3}
+#   direction_info <- c(true_x,true_y,true_angle,true_selection)
+# }
+# # analyzing each node
+# n_tips <- length(tree$tip.label)
+# n_nodes <- tree$Nnode
+# node_numbers <- c((n_tips+1):(n_tips+n_nodes))
+# hval_extended <- c(0,pi/4,pi/2,3*pi/4,pi,5*pi/4,3*pi/2,7*pi/4,2*pi)
+# z <- 10
+# node_posteriors <- c()
+# i = 1
+# for (node in node_numbers) {
+#   cat("\r","Node ", node, " | ", round(as.numeric(i)/n_nodes*100,0), "%")
+#   # creating a dataset for this node
+#   node_name <- paste0("X",node)
+#   subset_d <- data_d[[node_name]]
+#   subset_m <- data_m[[node_name]]
+#   subset_c <- data_c[[node_name]]
+#   subset_h <- data_h[[node_name]]
+#   subset_r <- data_r[[node_name]]
+#   subset_s <- data_s[[node_name]]
+#   subset_a <- data_a[[node_name]]
+#   subset_x <- data_x[[node_name]]
+#   subset_y <- data_y[[node_name]]
+#   node_data <- data.frame(cbind(d=subset_d, m=subset_m, c=subset_c, h=subset_h, r=subset_r, s=subset_s, a=subset_a, x=subset_x, y=subset_y))
+#   write.csv(node_data,paste0(skink_output_directory,"/nodes/",node_name,".csv"),row.names=FALSE,quote=FALSE)
+#   # getting overall estimates for continuous values
+#   r <- mean(node_data$r)
+#   s <- mean(node_data$s)
+#   a <- mean(node_data$a)
+#   x <- mean(node_data$x)
+#   y <- mean(node_data$y)
+#   # getting most common scenario and corresponding estimates
+#   scenario_counts <- node_data %>% group_by(d, m, c, h) %>% summarize(count=n())
+#   ind <- which(scenario_counts$count == max(scenario_counts$count))
+#   scenario <- scenario_counts[ind,]
+#   scenario_d <- scenario[[1]]
+#   scenario_m <- scenario[[2]]
+#   scenario_c <- scenario[[3]]
+#   scenario_h <- scenario[[4]]
+#   scenario_data <- node_data[which(node_data$d==scenario_d & node_data$m==scenario_m & node_data$c==scenario_c & node_data$h==scenario_h),]
+#   scenario_r <- mean(scenario_data$r)
+#   scenario_s <- mean(scenario_data$s)
+#   scenario_a <- mean(scenario_data$a)
+#   scenario_x <- mean(scenario_data$x)
+#   scenario_y <- mean(scenario_data$y)
+#   # adding information to the dataframe for all nodes
+#   node_posteriors$node[i] <- node
+#   node_posteriors$r[i] <- r
+#   node_posteriors$s[i] <- s
+#   node_posteriors$a[i] <- a
+#   node_posteriors$x[i] <- x
+#   node_posteriors$y[i] <- y
+#   node_posteriors$scenario_d[i] <- scenario_d
+#   node_posteriors$scenario_m[i] <- scenario_m
+#   node_posteriors$scenario_c[i] <- scenario_c
+#   node_posteriors$scenario_h[i] <- scenario_h
+#   node_posteriors$scenario_r[i] <- scenario_r
+#   node_posteriors$scenario_s[i] <- scenario_s
+#   node_posteriors$scenario_a[i] <- scenario_a
+#   node_posteriors$scenario_x[i] <- scenario_x
+#   node_posteriors$scenario_y[i] <- scenario_y
+#   # direction information
+#   selection <- scenario_h
+#   if (selection == 4) {selection <- 0}
+#   if (selection == 5) {selection <- 1}
+#   if (selection == 6) {selection <- 2}
+#   if (selection == 7) {selection <- 3}
+#   node_posteriors$selection[i] <- selection
+#   direction_info <- process_direction(scenario_h,scenario_r,scenario_s,z,hval_extended)
+#   node_posteriors$true_x[i] <- direction_info[1]
+#   node_posteriors$true_y[i] <- direction_info[2]
+#   node_posteriors$true_angle[i] <- direction_info[3]
+#   node_posteriors$true_selection[i] <- direction_info[4]
+#   # moving to the next row
+#   i = i + 1
+# }
+# node_data <- data.frame(node_posteriors)
+# write.csv(node_data,paste0(skink_output_directory,"node_reconstructions.csv"),row.names=FALSE,quote=FALSE)
+```
+
+```{r node_data, eval=TRUE}
+node_data <- read.csv(paste0(skink_output_directory,"node_reconstructions.csv"),header=TRUE)
+```
+
+<div class = "row">
+<div class = "col-md-3">
+
+These are the ancestral state estimates for each node on the map, colored by the splitting direction. One ancestral ellipse (for node 266) is removed because it is far too large for the map. Centroid is still shown.
+
+```{r direction_map_est, echo=TRUE}
+node_data_factored <- node_data
+node_data_factored$true_selection <- as.factor(node_data$true_selection)
+
+polygons_data <- data.frame(matrix(data=NA,nrow=0,ncol=4))
+for (i in 1:nrow(node_data_factored)) {
+  ellipse <- data.frame(make_ellipse_coords(node_data_factored$scenario_x[i],node_data_factored$scenario_y[i],node_data_factored$scenario_r[i],node_data_factored$scenario_s[i],node_data_factored$scenario_a[i]))
+  n_points <- nrow(ellipse)
+  ellipse$node <- rep(node_data_factored$node[i],n_points)
+  ellipse$selection <- rep(node_data_factored$true_selection[i],n_points)
+  polygons_data <- rbind(polygons_data,ellipse)
+}
+polygons_data$node <- as.factor(polygons_data$node)
+polygons_data$selection <- as.factor(polygons_data$selection)
+
+# node 266 has a giant ancestral range, and it's not clear why
+polygons_data <- polygons_data[polygons_data$node != 266,]
+
+xmin <- min(min(node_data_factored$x),min(polygons_data$x))
+xmax <- max(max(node_data_factored$x),max(polygons_data$x))
+ymin <- min(min(node_data_factored$y),min(polygons_data$y))
+ymax <- max(max(node_data_factored$y),max(polygons_data$y))
+
+node_directions <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_polygon(data=polygons_data,aes(x=x,y=y,group=node,color=selection),fill=NA,lwd=.25) +
+  geom_point(data=node_data_factored,aes(x=scenario_x,y=scenario_y,color=true_selection)) +
+  geom_text(data=node_data_factored,aes(x=scenario_x,y=scenario_y,label=node),color=lines_color,size=2,fontface="bold",check_overlap=TRUE) +
+  scale_color_manual(values=c(color_1,color_2,color_3,color_4)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position="none")
+
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.2,2.6),y=c(0,-0.3,-0.4,0.3),xend=c(0.9,1.8,2.2,3),yend=c(0,0.3,0.4,-0.3)))
+line_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color=c(color_1,color_2,color_3,color_4)) +
+  lims(x=c(0,3.1),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+node_directions_labelled <- node_directions + inset_element(line_plot,.65,.8,.99,.99)
+ggsave(paste0(direction_plot_directory,"map_est.png"),node_directions_labelled,dpi=600,width=7,height=5)
+```
+
+```{r true_direction_lines_est, echo=TRUE}
+# Getting true direction line counts
+count_0 <- sum(node_data$true_selection == 0)
+count_1 <- sum(node_data$true_selection == 1)
+count_2 <- sum(node_data$true_selection == 2)
+count_3 <- sum(node_data$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"true_direction_est_probs.png"),plot_with_arrows,dpi=600)
+```
+
+```{r true_direction_lines_est_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"true_direction_est_probs.png"))
+```
+
+</div>
+<div class = "col-md-9">
+
+```{r direction_map_est_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"map_est.png"))
+```
+
+</div>
+</div>
 
 ```{r reconstructions}
-
+# THIS IS DEFUNCT CODE FOR PLOTTING THE ELLIPSES ON A TREE, TO BE USED LATER
 # # assume running from `ellipses/skinks`
 # # usage:
 # # Rscript scripts/plot_clado_ellipse_tree.R
@@ -809,103 +1910,64 @@ include_graphics(paste0(direction_plot_directory,"map_3.png"))
 
 ```
 
-## Simulation Analyses
+---
 
-### Coverage
+### Reconstruction Tree
 
 <div class = "row">
-<div class = "col-md-5">
+<div class = "col-md-3">
 
-These are the results of the completed coverage experiment.
+Here we add the tree structure to the map instead of the ellipses and splitting directions.
 
-```{r coverage, echo=TRUE}
-# SIMULATION COVERAGE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# burnin <- 10000
-# completed_iterations <- 200000
-# params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
-# simulation_numbers <- sprintf("%03.0f", 1:200)
-# nsims <- length(simulation_numbers)
-# sim_data <- data.frame(matrix(ncol=9,nrow=0))
-# row <- 1
-# for (num in simulation_numbers) {
-#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
-#   directory <- paste0(sim_prefix,num,"/")
-#   iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
-#   if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
-#   if (iterations >= completed_iterations) {
-#     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
-#     tree_size <- length(treefile$tip.label)
-#     logfile <- read.csv(paste0(directory,"model_log.tsv"),sep="\t",skipNul=TRUE)
-#     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
-#     true_vals <- c()
-#     for (i in 1:length(truefile)) {
-#       true_vals$param[i] <- truefile[[i]][1]
-#       true_vals$vals[i] <- paste(truefile[[i]][-1],collapse=",")
-#     }
-#     mcmc <- logfile[-c(1:burnin),]
-#     for (param in params_list) {
-#       param_true <- as.numeric(true_vals$vals[which(true_vals$param==param)])
-#       param_mcmc <- mcmc[[param]]
-#       param_est <- mean(param_mcmc)
-#       param_hpd <- hdi(param_mcmc)
-#       param_hpd_low <- param_hpd[[1]]
-#       param_hpd_high <- param_hpd[[2]]
-#       if (param_hpd_low <= param_true & param_true <= param_hpd_high) {param_covered <- TRUE} else {param_covered <- FALSE}
-#       param_ess <- ess(param_mcmc)
-#       param_row <- c(num,param,param_true,param_est,param_hpd_low,param_hpd_high,param_covered,param_ess,tree_size)
-#       sim_data <- rbind(sim_data,param_row)
-#       row <- row + 1
-#     }
-#   }
-# }
-# colnames(sim_data) <- c("sim","param","true","est","hpd_low","hpd_high","covered","ess","tree_size")
-# write.table(sim_data,file=paste0(simulation_output_directory,"sim_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
-```
-
-``` {r coverage_plots, echo=TRUE} 
-sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
-sim_data <- sim_data[which(sim_data$ess >= 200),]
-
-plot_param <- function(param, name) {
-  data_subset <- sim_data[which(sim_data$param == param),]
-  coverage <- round(sum(data_subset$covered==TRUE)/length(data_subset$covered) * 100)
-  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
-  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
-  plot <- ggplot(data_subset, aes(x=true, y=est)) +
-    geom_errorbar(aes(ymin=hpd_low,ymax=hpd_high,col=covered),linewidth=.25,alpha=.5) +
-    geom_point(size=.5,pch=16,alpha=.5) +
-    geom_abline(slope=1,linewidth=.25) +
-    labs(x=NULL,y=NULL) +
-    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward") +
-    annotate(geom="text",label=paste(coverage,"%",sep=""),x=max,y=min,hjust="inward",vjust="inward") +
-    lims(x=c(min,max),y=c(min,max)) +
-    theme_bw() +
-    theme(aspect.ratio=1,panel.grid.minor=element_blank(),panel.grid.major=element_blank(),legend.position="none",plot.margin=margin(4,4,4,4,"pt"))
-  return(plot)
+```{r tree_map, echo=TRUE}
+node_locations <- c()
+for (i in 1:length(tree$tip.label)) {
+  node_locations$node[i] <- i
+  taxon <- tree$tip.label[i]
+  node_locations$x[i] <- ellipse_data$x[which(ellipse_data$taxon==tree$tip.label[i])]
+  node_locations$y[i] <- ellipse_data$y[which(ellipse_data$taxon==tree$tip.label[i])]
 }
+node_locations$node <- c(node_locations$node, node_data$node)
+node_locations$x <- c(node_locations$x, node_data$scenario_x)
+node_locations$y <- c(node_locations$y, node_data$scenario_y)
+node_locations <- data.frame(node_locations)
 
-plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
-plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
-plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
-plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
-plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
-plot_mu <- plot_param("mu",bquote(mu))
-plot_kappa <- plot_param("kappa",bquote(kappa))
-plot_root_x <- plot_param("root_x",bquote(root[x]))
-plot_root_y <- plot_param("root_y",bquote(root[y]))
-plot_root_r <- plot_param("root_r",bquote(root[r]))
-plot_root_s <- plot_param("root_s",bquote(root[s]))
-plot_root_a <- plot_param("root_a",bquote(root[a]))
+tree_data <- data.frame(tree$edge)
+colnames(tree_data) <- c("N1", "N2")
+edge_points <- c()
+for (i in 1:nrow(tree_data)) {
+  node_1 <- tree_data$N1[i]
+  edge_points$X1[i] <- node_locations$x[which(node_locations$node==node_1)]
+  edge_points$Y1[i] <- node_locations$y[which(node_locations$node==node_1)]
+  node_2 <- tree_data$N2[i]
+  edge_points$X2[i] <- node_locations$x[which(node_locations$node==node_2)]
+  edge_points$Y2[i] <- node_locations$y[which(node_locations$node==node_2)]
+}
+edge_points <- data.frame(edge_points)
 
-coverage_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4)
-ggsave(paste0(simulation_plot_directory,"coverage.png"),coverage_plot,dpi=600,width=7,height=5)
+xmin <- min(node_locations$x)
+xmax <- max(node_locations$x)
+ymin <- min(node_locations$y)
+ymax <- max(node_locations$y)
+
+node_tree <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_segment(data=edge_points,aes(x=X1,y=Y1,xend=X2,yend=Y2),color=lines_color,lty="dotted",lwd=.25) +
+  geom_text(data=node_locations,aes(x=x,y=y,label=node),color=lines_color,size=2,fontface="bold",check_overlap=TRUE) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position="none")
+
+ggsave(paste0(tree_plot_directory,"map_tree.png"),node_tree,dpi=600,width=7,height=5)
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-9">
 
-``` {r coverage_plots_show, eval=TRUE, results=TRUE} 
-include_graphics(paste0(simulation_plot_directory,"coverage.png"))
+```{r tree_map_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(tree_plot_directory,"map_tree.png"))
 ```
 
 </div>
@@ -913,116 +1975,44 @@ include_graphics(paste0(simulation_plot_directory,"coverage.png"))
 
 ---
 
-### Sensitivity to Extinction
+### Node Posterior
 
-<div class = "row">
-<div class = "col-md-5">
+Plotting the posterior distribution at a node
 
-These simulations represent a scenario where 50% of species either go extinct before the present, or are not sampled for other reasons. As expected, rates of evolution of $x$ and $y$ are overestimated, because we fail to observe some cladogenetic events where $x$ and $y$ would change. Additionally, the rate of evolution of $a$ is overestimated. This is likely for the same reason, although the situation is a bit more complex. Generally, cladogenetic scenarios make $a$ smaller, which is counteracted by $\mu$ and $\kappa$ pulling $a$ toward larger values. If we don't observe some cladogenetic events, we might assume that $a$ stays small, and has more time to evolve toward the optimum (which would cause an underestimation of $\kappa$). However, we do not see this; the deterministic part of the OU process seems robust to missing cladogenetic events. Instead, we observe an overestimate of $\sigma_a$. It is also interesting that we overestimate rates of evolution for $r$ and $s$, parameters which do not change at cladogenesis. The model is likely attempting to compensate for shifts in $x$ and $y$ by expanding the influence of the cladogenetic events which are observed, necessitating more elongated ellipses at those times. Root values are not recovered especially well with or without extinction, although extinction does lead to a few extreme outliers which are not seen when the model is correctly specified (for example, inferring root values for $x$ and $y$ on the order of 10,000). It is not clear why this happens.
+```{r single_posterior}
 
-```{r sensitivity, echo=TRUE}
-# SIMULATION SENSITIVITY -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# burnin <- 10000
-# completed_iterations <- 200000
-# params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
-# simulation_numbers <- sprintf("%03.0f", 1:100)
-# nsims <- length(simulation_numbers)
-# sim_data <- data.frame(matrix(ncol=7,nrow=0))
-# row <- 1
-# for (num in simulation_numbers) {
-#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
-#   directory <- paste0(sim_prefix,num,"/")
-#   if (file.exists(paste0(directory,"sensitivity/model_log.tsv"))) {
-#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])
-#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
-#   } else {iterations <- 0}
-#   if (iterations >= completed_iterations) {
-#     logfile <- read.csv(paste0(directory,"sensitivity/model_log.tsv"),sep="\t",skipNul=TRUE)
-#     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
-#     true_vals <- c()
-#     for (i in 1:length(truefile)) {
-#       true_vals$param[i] <- truefile[[i]][1]
-#       true_vals$vals[i] <- paste(truefile[[i]][-1],collapse=",")
-#     }
-#     mcmc <- logfile[-c(1:burnin),]
-#     for (param in params_list) {
-#       param_true <- as.numeric(true_vals$vals[which(true_vals$param==param)])
-#       param_mcmc <- mcmc[[param]]
-#       param_est <- mean(param_mcmc)
-#       param_hpd <- hdi(param_mcmc)
-#       param_hpd_low <- param_hpd[[1]]
-#       param_hpd_high <- param_hpd[[2]]
-#       param_ess <- ess(param_mcmc)
-#       param_row <- c(num,param,param_true,param_est,param_hpd_low,param_hpd_high,param_ess)
-#       sim_data <- rbind(sim_data,param_row)
-#       row <- row + 1
-#     }
-#   }
-# }
-# colnames(sim_data) <- c("sim","param","true","est","hpd_low","hpd_high","ess")
-# write.table(sim_data,file=paste0(simulation_output_directory,"sensitivity_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
 ```
 
-``` {r sensitivity_plots, echo=TRUE} 
-sim_data <- read.csv(paste0(simulation_output_directory,"sensitivity_results.tsv"),sep="\t")
-sim_data <- sim_data[which(sim_data$ess >= 200),]
+---
 
-plot_param <- function(param, name) {
-  data_subset <- sim_data[which(sim_data$param == param),]
-  high_vals <- sort(data_subset$hpd_high)
-  low_vals <- sort(data_subset$hpd_low)
-  range <- c(low_vals[3],high_vals[length(high_vals)-2])
-  high_limit <- high_vals[length(high_vals)-2] + .5 * (range[2] - range[1])
-  low_limit <- low_vals[3] - .5 * (range[2] - range[1])
-  keep <- c()
-  for (i in 1:nrow(data_subset)) {
-    keep[i] <- TRUE
-    if (data_subset$hpd_high[i] > high_limit) {
-      keep[i] <- FALSE
-    }
-    if (data_subset$hpd_low[i] < low_limit) {
-      keep[i] <- FALSE
-    }
-  }
-  n_outliers <- sum(keep==FALSE)
-  data_subset <- data_subset[keep==TRUE,]
-  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
-  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
-  plot <- ggplot(data_subset, aes(x=true, y=est)) +
-    geom_errorbar(aes(ymin=hpd_low,ymax=hpd_high),linewidth=.25,alpha=.5) +
-    geom_point(size=.5,pch=16,alpha=.5) +
-    geom_abline(slope=1,linewidth=.25) +
-    labs(x=NULL,y=NULL) +
-    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward") +
-    annotate(geom="text",label=paste("Outliers: ",n_outliers),x=max,y=min,hjust="inward",vjust="inward") +
-    lims(x=c(min,max),y=c(min,max)) +
-    theme_bw() +
-    theme(aspect.ratio=1,panel.grid.minor=element_blank(),panel.grid.major=element_blank(),legend.position="none",plot.margin=margin(4,4,4,4,"pt"))
-  return(plot)
-}
+### Node Estimate
 
-plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
-plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
-plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
-plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
-plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
-plot_mu <- plot_param("mu",bquote(mu))
-plot_kappa <- plot_param("kappa",bquote(kappa))
-plot_root_x <- plot_param("root_x",bquote(root[x]))
-plot_root_y <- plot_param("root_y",bquote(root[y]))
-plot_root_r <- plot_param("root_r",bquote(root[r]))
-plot_root_s <- plot_param("root_s",bquote(root[s]))
-plot_root_a <- plot_param("root_a",bquote(root[a]))
+Plotting the highest posterior estimates for a cladogenetic event at a node
 
-sensitivity_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4)
-ggsave(paste0(simulation_plot_directory,"sensitivity.png"),sensitivity_plot,dpi=600,width=7,height=5)
+```{r single_est}
+
+```
+
+---
+
+### Aridity
+
+<div class = "row">
+<div class = "col-md-6">
+
+Comparing the aridity of posterior daughters to the aridity of random daughters
+
+```{r aridity}
+
 ```
 
 </div>
-<div class = "col-md-7">
+<div class = "col-md-6">
 
-``` {r sensitivity_plots_show, eval=TRUE, results=TRUE} 
-include_graphics(paste0(simulation_plot_directory,"sensitivity.png"))
+Performing the same aridity analysis clade-by-clade
+
+```{r aridity_by_clade}
+
 ```
 
 </div>
@@ -1030,172 +2020,10 @@ include_graphics(paste0(simulation_plot_directory,"sensitivity.png"))
 
 ---
 
-### Comparison to *rase*
+### Movement
 
-<div class = "row">
-<div class = "col-md-5">
+Comparing the movement at speciation to the anagenetic movement
 
-Many of these *rase* analyses did not converge. Some had no variability at all, and many had very low ESS. Also, some of the estimates were very poor. I need to examine these, and see if I can improve the *rase* analyses to provide a fair comparison. At the very least, I will perform *rase* on the remainder of the 200 simulations. So far, it looks like EMPIRE performs much better than RASE on data simulated under EMPIRE (to be expected). Interestingly, RASE not only overestimates rates (expected), but also misestimates root values substantially (less expected).
+```{r movement}
 
-```{r rase, echo=TRUE}
-# SIMULATION RASE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# params_list <- c("sigma_x","sigma_y","root_x","root_y")
-# sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
-# sim_data <- sim_data[which(sim_data$ess >= 200),]
-# sim_data <- sim_data[which(sim_data$param %in% params_list),]
-# sim_data <- sim_data[,c(1:4)]
-# sim_data <- cbind(sim_data,rep(NA,nrow(sim_data)),rep(NA,nrow(sim_data)))
-# colnames(sim_data) <- c("sim","param","true","EMPIRE","rase","ess")
-# burnin <- 100
-# simulation_numbers <- sprintf("%03.0f", 1:100)
-# nsims <- length(simulation_numbers)
-# for (num in simulation_numbers) {
-#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
-#   directory <- paste0(sim_prefix,num,"/")
-#   logfile <- read.csv(paste0(directory,"rase.csv"),sep=",",skipNul=TRUE)
-#   root_node <- (ncol(logfile))/2 + 1
-#   root_x_colname <- paste0("n",root_node,"_x")
-#   root_y_colname <- paste0("n",root_node,"_y")
-#   root_x_ind <- which(colnames(logfile)==root_x_colname)
-#   root_y_ind <- which(colnames(logfile)==root_y_colname)
-#   sigma2x_ind <- which(colnames(logfile)=="sigma2x")
-#   sigma2y_ind <- which(colnames(logfile)=="sigma2y")
-#   mcmc <- logfile[-c(1:burnin),c(root_x_ind,root_y_ind,sigma2x_ind,sigma2y_ind)]
-#   colnames(mcmc) <- c("root_x","root_y","sigma2_x","sigma2_y")
-#   mcmc$sigma_x <- lapply(mcmc$sigma2_x,"sqrt")
-#   mcmc$sigma_y <- lapply(mcmc$sigma2_y,"sqrt")
-#   for (param in params_list) {
-#     row <- which(sim_data$sim==as.numeric(num) & sim_data$param==param)
-#     if (length(row)==1) {
-#       param_mcmc <- unlist(mcmc[[param]])
-#       param_est <- mean(param_mcmc)
-#       param_ess <- ess(param_mcmc)
-#       sim_data$rase[row] <- param_est
-#       sim_data$ess[row] <- param_ess
-#     }
-#   }
-# }
-# sim_data <- sim_data[which(!is.na(sim_data$rase)),]
-# write.table(sim_data,file=paste0(simulation_output_directory,"rase_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
 ```
-
-``` {r rase_plots, echo=TRUE} 
-sim_data <- read.csv(paste0(simulation_output_directory,"rase_results.tsv"),sep="\t")
-sim_data <- sim_data[which(sim_data$ess >= 25),]
-
-plot_param <- function(param, name) {
-  data_subset <- sim_data[which(sim_data$param == param),]
-  model_data <- data.frame(cbind(true=c(data_subset$true,data_subset$true),est=c(data_subset$EMPIRE,data_subset$rase),model=c(rep("EMPIRE",nrow(data_subset)),rep("RASE",nrow(data_subset)))))
-  model_data$true <- as.numeric(model_data$true)
-  model_data$est <- as.numeric(model_data$est)
-  quantiles <- quantile(model_data$est,c(.25,.75),names=FALSE)
-  min <- quantiles[1] - (quantiles[2] - quantiles[1])
-  max <- quantiles[2] + (quantiles[2] - quantiles[1])
-  keep <- c()
-  outliers <- c()
-  for (i in 1:nrow(model_data)) {
-    #keep[i] <- TRUE
-    if (model_data$est[i] > max) {
-      #keep[i] <- FALSE
-      outliers <- c(outliers,model_data$model[i])
-    }
-    if (model_data$est[i] < min) {
-      #keep[i] <- FALSE
-      outliers <- c(outliers,model_data$model[i])
-    }
-  }
-  n_rase_outliers <- sum(outliers=="RASE")
-  n_empire_outliers <- sum(outliers=="EMPIRE")
-  bottom_text <- paste0(
-    "RASE Outliers: ",n_rase_outliers,"\n",
-    "EMPIRE Outliers: ",n_empire_outliers,"\n"
-  )
-  #model_data <- model_data[keep==TRUE,]
-  model_data$model <- as.factor(model_data$model)
-  plot <- ggplot(model_data, aes(x=true, y=est)) +
-    geom_point(pch=16,aes(color=model)) +
-    guides(color=guide_legend(override.aes=list(size=5))) +
-    geom_abline(slope=1,linewidth=.25) +
-    labs(x=NULL,y=NULL,color="Model:") +
-    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward") +
-    annotate(geom="text",label=bottom_text,x=max,y=min,hjust="inward",vjust="inward") +
-    lims(x=c(min,max),y=c(min,max)) +
-    theme_bw() +
-    theme(aspect.ratio=1,panel.grid.minor=element_blank(),panel.grid.major=element_blank(),plot.margin=margin(4,4,4,4,"pt"))
-  return(plot)
-}
-
-plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
-plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
-plot_root_x <- plot_param("root_x",bquote(root[x]))
-plot_root_y <- plot_param("root_y",bquote(root[y]))
-
-rase_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_layout(ncol = 2, guides="collect") & theme(legend.position="bottom")
-ggsave(paste0(simulation_plot_directory,"rase.png"),rase_plot,dpi=600,width=7,height=7.5)
-```
-
-</div>
-<div class = "col-md-7">
-
-``` {r rase_plots_show, eval=TRUE, results=TRUE} 
-include_graphics(paste0(simulation_plot_directory,"rase.png"))
-```
-
-</div>
-</div>
-
----
-
-### Tree sizes
-
-<div class = "row">
-<div class = "col-md-5">
-
-This plot uses the same simulations as the coverage plot, but instead shows the quality of estimates based on tree sizes. Most trees (all between 20 and 250 taxa) behave similarly. With smaller trees, it is somewhat easier to estimate the root, and somewhat more difficult to estimate rate parameters. This is what we would expect.
-
-``` {r treesize_plots, echo=TRUE} 
-sim_data <- read.csv(paste0(simulation_output_directory,"sim_results.tsv"),sep="\t")
-sim_data <- sim_data[which(sim_data$ess >= 200),]
-
-plot_param <- function(param, name) {
-  data_subset <- sim_data[which(sim_data$param == param),]
-  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
-  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
-  plot <- ggplot(data_subset, aes(x=true, y=est)) +
-    geom_point(size=.5,pch=16,aes(color=tree_size)) +
-    #scale_color_gradient(low="yellow",high="blue") +
-    geom_abline(slope=1,linewidth=.25) +
-    labs(x=NULL,y=NULL) +
-    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward") +
-    lims(x=c(min,max),y=c(min,max)) +
-    theme_bw() +
-    theme(aspect.ratio=1,panel.grid.minor=element_blank(),panel.grid.major=element_blank(),plot.margin=margin(4,4,4,4,"pt"))
-  return(plot)
-}
-
-plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
-plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
-plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
-plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
-plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
-plot_mu <- plot_param("mu",bquote(mu))
-plot_kappa <- plot_param("kappa",bquote(kappa))
-plot_root_x <- plot_param("root_x",bquote(root[x]))
-plot_root_y <- plot_param("root_y",bquote(root[y]))
-plot_root_r <- plot_param("root_r",bquote(root[r]))
-plot_root_s <- plot_param("root_s",bquote(root[s]))
-plot_root_a <- plot_param("root_a",bquote(root[a]))
-
-treesize_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4) + plot_layout(guides="collect") & labs(color="Tree Size") & theme(legend.position="bottom") & scale_color_gradient(low="yellow",high="blue",aesthetics="color",limits=c(20,250))
-ggsave(paste0(simulation_plot_directory,"tree_size.png"),treesize_plot,dpi=600,width=7,height=5.5)
-```
-
-</div>
-<div class = "col-md-7">
-
-``` {r treesize_plots_show, eval=TRUE, results=TRUE} 
-include_graphics(paste0(simulation_plot_directory,"tree_size.png"))
-```
-
-</div>
-</div>
