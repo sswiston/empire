@@ -25,7 +25,7 @@ output:
 
 ### Information
 
-Packages required for these analyses: ape, corrr, devtools, dplyr, empire, ggplot2, ggtree, HDInterval, knitr, mcmcse, patchwork, phytools, rase, sf, spatstat
+Packages required for these analyses: ape, corrr, devtools, dplyr, empire, ggplot2, ggtree, HDInterval, knitr, mcmcse, patchwork, phytools, rase, sf, spatstat, treeio
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=FALSE,echo=FALSE,results=FALSE,message=FALSE,warning=FALSE,tidy='styler')
@@ -46,6 +46,7 @@ library(phytools)
 library(rase)
 library(sf)
 library(spatstat)
+library(treeio)
 ```
 
 ```{r directories, eval=TRUE}
@@ -171,87 +172,10 @@ spheno_shapes <- sf::read_sf(paste0(local_directory,"skinks/data/ranges/australi
 ellipse_data <- read.csv(paste0(local_directory,"skinks/data/ellipse_data.csv"),header=TRUE)
 ```
 
-### Modern Direction Lines
+### Modern Ellipses
 
 <div class = "row">
-<div class = "col-md-7">
-
-These are the direction lines (in PCA and map form) for modern-day ellipses. The axis of greatest variation is (primarily) east-west. Ellipses tend to elongate along the coast, demonstrating that the elongation of these ellipses retains important information about the positioning of species ranges.
-
-Keep in mind that, for both of these plots, ellipse elongation is determined by the *degree* of oblongness, and all vectors are scaled identically. The sizes of ellipses are not used. Therefore, smaller vectors represent ellipses that are rounder in shape, while longer vectors represent ellipses that are very oblong.
-
-```{r modern_ellipse_plot, echo=TRUE}
-# PCA
-pca_data <- ellipse_data[c("r","s")]
-pca <- princomp(pca_data)
-prop_var <- c(pca$sdev[1]^2/(pca$sdev[1]^2+pca$sdev[2]^2),pca$sdev[2]^2/(pca$sdev[1]^2+pca$sdev[2]^2))
-
-# PCA Plot
-plot_pca <- ggplot(ellipse_data) +
-  lims(x=c(-30,30),y=c(-30,30)) +
-  labs(x="West ------- East", y="South ------- North") +
-  geom_segment(x=0,y=0,xend=ellipse_data$r,yend=ellipse_data$s,alpha=0.5,color=lines_color) +
-  geom_segment(x=0,y=0,xend=-1*ellipse_data$r,yend=-1*ellipse_data$s,alpha=0.5,color=lines_color) +
-  geom_segment(x=0,y=0,xend=pca$loadings[1,2]*prop_var[2]*20,yend=pca$loadings[2,2]*prop_var[2]*20,col=color_3,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
-  geom_segment(x=0,y=0,xend=-1*pca$loadings[1,2]*prop_var[2]*20,yend=-1*pca$loadings[2,2]*prop_var[2]*20,col=color_3,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
-  geom_segment(x=0,y=0,xend=pca$loadings[1,1]*prop_var[1]*20,yend=pca$loadings[2,1]*prop_var[1]*20,col=color_1,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
-  geom_segment(x=0,y=0,xend=-1*pca$loadings[1,1]*prop_var[1]*20,yend=-1*pca$loadings[2,1]*prop_var[1]*20,col=color_1,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
-  annotate("text",x=30,y=30,hjust=1,label=paste0("PC1: ",round(prop_var[1],3)*100,"%, PC2: ",round(prop_var[2],3)*100,"%"),color=lines_color) +
-  theme_bw() +
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_text(color=lines_color),
-        panel.grid = element_blank(),
-        panel.border = element_rect(color=lines_color,linewidth=2),
-        plot.background = element_rect(fill=background_color,color=background_color),
-        panel.background = element_rect(fill=background_color),
-        axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16),
-        aspect.ratio = 1)
-ggsave(paste0(range_plot_directory,"elongation_pca.png"),plot_pca,dpi=600)
-
-# Vector Plot
-plot_with_vectors <- ggplot(spheno_shapes) +
-  geom_sf(fill=lines_color,color=NA,alpha=0.04) +
-  geom_segment(x=ellipse_data$x,y=ellipse_data$y,xend=ellipse_data$x+ellipse_data$r*.05,yend=ellipse_data$y+ellipse_data$s*.05,color=color_1,lwd=.75) +
-  geom_segment(x=ellipse_data$x,y=ellipse_data$y,xend=ellipse_data$x-ellipse_data$r*.05,yend=ellipse_data$y-ellipse_data$s*.05,color=color_1,lwd=.75) +
-  theme_void() +
-  theme(panel.border = element_rect(color=lines_color,linewidth=2),
-        panel.background = element_rect(fill=background_color))
-ggsave(paste0(range_plot_directory,"australia_with_vectors.png"),plot_with_vectors,dpi=600)
-
-# Combining
-vectors_and_map <- plot_pca + plot_with_vectors +
-  plot_annotation(theme = theme(plot.background = element_rect(color=background_color,fill=background_color,linewidth=2)))
-ggsave(paste0(range_plot_directory,"vectors_and_map.png"),vectors_and_map,dpi=600,width=7,height=3.5)
-```
-
-```{r modern_ellipses_plot_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
-```
-
-```{r modern_ellipse_plot_nopca}
-plot_nopca <- ggplot(ellipse_data) +
-  lims(x=c(-30,30),y=c(-30,30)) +
-  labs(x="West ------- East", y="South ------- North") +
-  geom_segment(x=0,y=0,xend=ellipse_data$r,yend=ellipse_data$s,alpha=0.5,color=lines_color) +
-  geom_segment(x=0,y=0,xend=-1*ellipse_data$r,yend=-1*ellipse_data$s,alpha=0.5,color=lines_color) +
-  theme_bw() +
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_text(color=lines_color),
-        panel.grid = element_blank(),
-        panel.border = element_rect(color=lines_color,linewidth=2),
-        plot.background = element_rect(fill=background_color,color=background_color),
-        panel.background = element_rect(fill=background_color),
-        axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16),
-        aspect.ratio = 1)
-ggsave(paste0(range_plot_directory,"elongation_no_pca.png"),plot_nopca,dpi=600)
-```
-
-</div>
-<div class = "col-md-5">
+<div class = "col-md-9">
 
 Here are some example ranges and their corresponding ellipses. Shown: *Lerista speciosa* (northeast), *Ctenotus regius* (southwest), *Ctenotus nigrilineatus* (north), *Silvascinus tryoni* (central west), *Lerista allochira* (south), *Lerista griffini* (southeast).
 
@@ -315,10 +239,6 @@ plot_with_ellipses <- ggplot(spheno_shapes) +
 ggsave(paste0(range_plot_directory,"australia_with_ellipses.png"),plot_with_ellipses,dpi=600)
 ```
 
-```{r modern_ellipses_plot_with_ellipses_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(range_plot_directory,"australia_with_ellipses.png"))
-```
-
 ```{r modern_ellipses_by_species}
 # PLOTS FOR INDIVIDUAL SPECIES - DO NOT RERUN
 # n_species <- nrow(ellipse_data)
@@ -339,24 +259,224 @@ include_graphics(paste0(range_plot_directory,"australia_with_ellipses.png"))
 ```
 
 </div>
+<div class = "col-md-3">
+
+```{r modern_ellipses_plot_with_ellipses_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(range_plot_directory,"australia_with_ellipses.png"))
+```
+
+</div>
+</div>
+
+And here are all of the modern ellipses, colored by clade.
+
+```{r modern_ellipses_all, echo=TRUE}
+ellipse_data_grouped <- ellipse_data
+for (i in 1:nrow(ellipse_data_grouped)) {
+  taxon <- as.character(ellipse_data_grouped$taxon[i])
+  clade <- "Other"
+  if (grepl("Ctenotus", taxon, fixed=TRUE)) {clade <- "Ctenotus"}
+  if (grepl("Lerista", taxon, fixed=TRUE)) {clade <- "Lerista"}
+  if (grepl("Notoscincus ornatus", taxon, fixed=TRUE)) {clade <- "Excluded"}
+  ellipse_data_grouped$Clade[i] <- clade
+}
+
+polygons_data <- data.frame(matrix(data=NA,nrow=0,ncol=4))
+for (i in 1:nrow(ellipse_data_grouped)) {
+  ellipse <- data.frame(make_ellipse_coords(ellipse_data_grouped$x[i],ellipse_data_grouped$y[i],ellipse_data_grouped$r[i],ellipse_data_grouped$s[i],ellipse_data_grouped$a[i]))
+  n_points <- nrow(ellipse)
+  ellipse$taxon <- rep(ellipse_data_grouped$taxon[i],n_points)
+  ellipse$Clade <- rep(ellipse_data_grouped$Clade[i],n_points)
+  polygons_data <- rbind(polygons_data,ellipse)
+}
+polygons_data$taxon <- as.factor(polygons_data$taxon)
+polygons_data$Clade <- as.factor(polygons_data$Clade)
+
+xmin <- min(min(ellipse_data_grouped$x),min(polygons_data$x))
+xmax <- max(max(ellipse_data_grouped$x),max(polygons_data$x))
+ymin <- min(min(ellipse_data_grouped$y),min(polygons_data$y))
+ymax <- max(max(ellipse_data_grouped$y),max(polygons_data$y))
+
+node_directions <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_polygon(data=polygons_data,aes(x=x,y=y,group=taxon,color=Clade),fill=NA,lwd=.25) +
+  #geom_text(data=ellipse_data_grouped,aes(x=x,y=y,label=taxon),color=lines_color,size=2,fontface="bold",check_overlap=TRUE) +
+  scale_color_manual(values=c(color_1,color_2,color_3,color_4)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position=c(.85,.8),
+        legend.title=element_text(color=lines_color),
+        legend.text=element_text(color=lines_color))
+
+ggsave(paste0(range_plot_directory,"ellipses_by_clade.png"),node_directions,dpi=600,width=7,height=5)
+```
+
+```{r modern_ellipses_all_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(range_plot_directory,"ellipses_by_clade.png"))
+```
+
+---
+
+### Modern Direction Lines
+
+<div class = "row">
+<div class = "col-md-6">
+
+These are the direction lines (in PCA and map form) for modern-day ellipses. The axis of greatest variation is (primarily) east-west. Ellipses tend to elongate along the coast, demonstrating that the elongation of these ellipses retains important information about the positioning of species ranges.
+
+Keep in mind that, for both of these plots, ellipse elongation is determined by the *degree* of oblongness, and all vectors are scaled identically. The sizes of ellipses are not used. Therefore, smaller vectors represent ellipses that are rounder in shape, while longer vectors represent ellipses that are very oblong.
+
+```{r modern_ellipse_plot, echo=TRUE}
+# PCA
+pca_data <- ellipse_data[c("r","s")]
+pca <- princomp(pca_data)
+prop_var <- c(pca$sdev[1]^2/(pca$sdev[1]^2+pca$sdev[2]^2),pca$sdev[2]^2/(pca$sdev[1]^2+pca$sdev[2]^2))
+
+# PCA Plot
+plot_pca <- ggplot(ellipse_data) +
+  lims(x=c(-30,30),y=c(-30,30)) +
+  labs(x="West ------- East", y="South ------- North") +
+  geom_segment(x=0,y=0,xend=ellipse_data$r,yend=ellipse_data$s,alpha=0.5,color=lines_color) +
+  geom_segment(x=0,y=0,xend=-1*ellipse_data$r,yend=-1*ellipse_data$s,alpha=0.5,color=lines_color) +
+  geom_segment(x=0,y=0,xend=pca$loadings[1,2]*prop_var[2]*20,yend=pca$loadings[2,2]*prop_var[2]*20,col=color_3,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
+  geom_segment(x=0,y=0,xend=-1*pca$loadings[1,2]*prop_var[2]*20,yend=-1*pca$loadings[2,2]*prop_var[2]*20,col=color_3,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
+  geom_segment(x=0,y=0,xend=pca$loadings[1,1]*prop_var[1]*20,yend=pca$loadings[2,1]*prop_var[1]*20,col=color_1,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
+  geom_segment(x=0,y=0,xend=-1*pca$loadings[1,1]*prop_var[1]*20,yend=-1*pca$loadings[2,1]*prop_var[1]*20,col=color_1,arrow=arrow(length=unit(0.2,"cm")),lwd=1.25) +
+  annotate("text",x=30,y=30,hjust=1,label=paste0("PC1: ",round(prop_var[1],3)*100,"%, PC2: ",round(prop_var[2],3)*100,"%"),color=lines_color) +
+  theme_bw() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16),
+        aspect.ratio = 1)
+ggsave(paste0(range_plot_directory,"elongation_pca.png"),plot_pca,dpi=600)
+
+# Vector Plot
+plot_with_vectors <- ggplot(spheno_shapes) +
+  geom_sf(fill=lines_color,color=NA,alpha=0.04) +
+  geom_segment(x=ellipse_data$x,y=ellipse_data$y,xend=ellipse_data$x+ellipse_data$r*.05,yend=ellipse_data$y+ellipse_data$s*.05,color=color_1,lwd=.75) +
+  geom_segment(x=ellipse_data$x,y=ellipse_data$y,xend=ellipse_data$x-ellipse_data$r*.05,yend=ellipse_data$y-ellipse_data$s*.05,color=color_1,lwd=.75) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color))
+ggsave(paste0(range_plot_directory,"australia_with_vectors.png"),plot_with_vectors,dpi=600)
+
+# Combining
+vectors_and_map <- plot_pca + plot_with_vectors +
+  plot_annotation(theme = theme(plot.background = element_rect(color=background_color,fill=background_color,linewidth=2)))
+ggsave(paste0(range_plot_directory,"vectors_and_map.png"),vectors_and_map,dpi=600,width=7,height=3.5)
+```
+
+```{r modern_ellipse_plot_nopca}
+plot_nopca <- ggplot(ellipse_data) +
+  lims(x=c(-30,30),y=c(-30,30)) +
+  labs(x="West ------- East", y="South ------- North") +
+  geom_segment(x=0,y=0,xend=ellipse_data$r,yend=ellipse_data$s,alpha=0.5,color=lines_color) +
+  geom_segment(x=0,y=0,xend=-1*ellipse_data$r,yend=-1*ellipse_data$s,alpha=0.5,color=lines_color) +
+  theme_bw() +
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16),
+        aspect.ratio = 1)
+ggsave(paste0(range_plot_directory,"elongation_no_pca.png"),plot_nopca,dpi=600)
+```
+
+</div>
+<div class = "col-md-6">
+
+```{r modern_ellipses_plot_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
+```
+
+</div>
 </div>
 
 ---
 
 ### Phylogenetic Tree
 
-Here is the tree being used, including node numbers.
+Here is the tree being used, including node numbers. Three major monophyletic clades are identified: *Ctenotus*, *Lerista*, and "other genera". The "other genera" clade includes all other Australian sphenomorphine skinks, except *Notoscincus ornatus*, which is sister to the clade containing both *Ctenotus* and *Lerista*.
 
 ```{r plot_tree, echo=TRUE}
-tree_plot <- ggtree(tree,layout="dendrogram") +
+tree_2 <- groupClade(tree,c(222,310,390))
+tree_plot <- ggtree(tree_2,aes(color=group),layout="dendrogram") +
+  scale_color_manual(name="Clade",values=c(color_1,color_2,color_3,color_4)) +
+  guides(color="none") +
+  geom_cladelab(node=222,label="Ctenotus, 89 sp.",fontsize=12,barsize=1,textcolor=color_2,barcolor=color_2,offset=8,vjust=1.5,hjust=.5) +
+  geom_cladelab(node=310,label="Lerista, 81 sp.",fontsize=12,barsize=1,textcolor=color_3,barcolor=color_3,offset=8,vjust=1.5,hjust=.5) +
+  geom_cladelab(node=390,label="Other, 47 sp.",fontsize=12,barsize=1,textcolor=color_4,barcolor=color_4,offset=8,vjust=1.5,hjust=.5) +
   geom_tiplab() +
-  geom_nodelab(geom="label",aes(label=node),angle=0,vjust=0) +
-  ggplot2::xlim(10,-40)
-ggsave(paste0(tree_plot_directory,"tree.png"),tree_plot,dpi=600,height=14,width=30)
+  geom_nodelab(geom="label",aes(label=node),fill=background_color,angle=0,vjust=0) +
+  ggplot2::xlim(10,-38) +
+  theme(plot.background=element_rect(fill=background_color,color=NA),
+        panel.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(tree_plot_directory,"tree.png"),tree_plot,dpi=600,height=16,width=40)
 ```
 
 ``` {r tree_plots_show, eval=TRUE, results=TRUE} 
 include_graphics(paste0(tree_plot_directory,"tree.png"))
+```
+
+---
+
+Here are the trees for the individual clades. Node numbering is consistent with the full tree and EMPIRE analyses.
+
+```{r plot_tree_ctenotus, echo=TRUE}
+tree_ctenotus <- treeio::tree_subset(tree,node=222,levels_back=0)
+tree_plot_ctenotus <- ggtree(tree_ctenotus,color=color_2) +
+  geom_tiplab(color=color_2) +
+  geom_nodelab(geom="label",aes(label=c(rep(NA,length(tree_ctenotus$tip.label)),222:309)),color=color_2,fill=background_color,angle=0,vjust=.5) +
+  ggplot2::xlim(0,32) +
+  theme(plot.background=element_rect(fill=background_color,color=NA),
+        panel.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(tree_plot_directory,"tree_ctenotus.png"),tree_plot_ctenotus,dpi=600,height=20,width=10)
+```
+
+``` {r tree_plots_ctenotus_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(tree_plot_directory,"tree_ctenotus.png"))
+```
+
+```{r plot_tree_lerista, echo=TRUE}
+tree_lerista <- treeio::tree_subset(tree,node=310,levels_back=0)
+tree_plot_lerista <- ggtree(tree_lerista,color=color_3) +
+  geom_tiplab(color=color_3) +
+  geom_nodelab(geom="label",aes(label=c(rep(NA,length(tree_lerista$tip.label)),310:389)),color=color_3,fill=background_color,angle=0,vjust=.5) +
+  ggplot2::xlim(0,27) +
+  theme(plot.background=element_rect(fill=background_color,color=NA),
+        panel.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(tree_plot_directory,"tree_lerista.png"),tree_plot_lerista,dpi=600,height=20,width=10)
+```
+
+``` {r tree_plots_lerista_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(tree_plot_directory,"tree_lerista.png"))
+```
+
+```{r plot_tree_other, echo=TRUE}
+tree_other <- treeio::tree_subset(tree,node=390,levels_back=0)
+tree_plot_other <- ggtree(tree_other,color=color_4) +
+  geom_tiplab(color=color_4) +
+  geom_nodelab(geom="label",aes(label=c(rep(NA,length(tree_other$tip.label)),390:435)),color=color_4,fill=background_color,angle=0,vjust=.5) +
+  ggplot2::xlim(0,42) +
+  theme(plot.background=element_rect(fill=background_color,color=NA),
+        panel.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(tree_plot_directory,"tree_other.png"),tree_plot_other,dpi=600,height=20,width=10)
+```
+
+``` {r tree_plots_other_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(tree_plot_directory,"tree_other.png"))
 ```
 
 ---
@@ -1433,12 +1553,223 @@ include_graphics(paste0(direction_plot_directory,"direction_circle.png"))
 
 ---
 
+These are direction line plots for each major subclade: *Ctenotus*, *Lerista*, and "Other".
+
+<div class = "row">
+<div class = "col-md-4">
+
+#### *Ctenotus*
+
+```{r directions_ctenotus, echo=TRUE}
+node_list <- c(222:309)
+directions_ctenotus <- direction_data[which(direction_data$node %in% node_list),]
+
+# Getting true direction line counts
+count_0 <- sum(directions_ctenotus$true_selection == 0)
+count_1 <- sum(directions_ctenotus$true_selection == 1)
+count_2 <- sum(directions_ctenotus$true_selection == 2)
+count_3 <- sum(directions_ctenotus$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"directions_ctenotus.png"),plot_with_arrows,dpi=600)
+```
+
+```{r directions_ctenotus_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_ctenotus.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### *Lerista*
+
+```{r directions_lerista, echo=TRUE}
+node_list <- c(310:389)
+directions_lerista <- direction_data[which(direction_data$node %in% node_list),]
+
+# Getting true direction line counts
+count_0 <- sum(directions_lerista$true_selection == 0)
+count_1 <- sum(directions_lerista$true_selection == 1)
+count_2 <- sum(directions_lerista$true_selection == 2)
+count_3 <- sum(directions_lerista$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"directions_lerista.png"),plot_with_arrows,dpi=600)
+```
+
+```{r directions_lerista_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_lerista.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### Other
+
+```{r directions_other, echo=TRUE}
+node_list <- c(390:435)
+directions_other <- direction_data[which(direction_data$node %in% node_list),]
+
+# Getting true direction line counts
+count_0 <- sum(directions_other$true_selection == 0)
+count_1 <- sum(directions_other$true_selection == 1)
+count_2 <- sum(directions_other$true_selection == 2)
+count_3 <- sum(directions_other$true_selection == 3)
+
+# Performing Chi Square test
+p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
+if (p < 0.001) {
+  p_string <- paste0("chi-squared test, p < 0.001")
+} else {
+  p_string <- paste0("chi-squared test, p = ",signif(p,digits=3))
+}
+
+# Getting densities
+lines <- c("0","1","2","3")
+counts <- c(count_0,count_1,count_2,count_3)
+density <- counts / sum(counts)
+count_data <- data.frame(cbind(lines=lines,density=as.numeric(density)))
+count_data$density <- as.numeric(count_data$density)
+
+# Plotting bars
+bar_plot <- ggplot(data=count_data,aes(x=lines,y=density,fill=lines)) +
+  geom_col() +
+  labs(y="Proportion") +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  labs(title=p_string,color=lines_color) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color=lines_color,size=16),
+        axis.ticks.y = element_line(color=lines_color),
+        axis.title = element_text(color=lines_color),
+        panel.grid = element_blank(),
+        panel.border = element_rect(color=lines_color,linewidth=2),
+        plot.background = element_rect(fill=background_color,color=background_color),
+        panel.background = element_rect(fill=background_color),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(size=16),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1,color=lines_color))
+
+# Direction lines for plotting
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.5,3.2),y=c(0,-0.3,-0.3,0.3),xend=c(0.9,1.8,2.5,3.8),yend=c(0,0.3,0.3,-0.3)))
+direction_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color="black") +
+  lims(x=c(0,4),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+# Combining direction lines with bars
+plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
+ggsave(paste0(direction_plot_directory,"directions_other.png"),plot_with_arrows,dpi=600)
+```
+
+```{r directions_other_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_other.png"))
+```
+
+</div>
+</div>
+
+---
+
 ### Direction Maps
 
 <div class = "row">
 <div class = "col-md-7">
 
-These are the directions mapped onto Australia. Right now I don't think there's much here, but I'm going to make similar plots with only the highest posterior for each node. I may even map whole ancestral ellipses, rather than just the centroids with the directions of splitting.
+These are the directions mapped onto Australia.
 
 ```{r direction_map, echo=TRUE}
 xmin <- min(direction_data$x)
@@ -1550,6 +1881,136 @@ include_graphics(paste0(direction_plot_directory,"map_2.png"))
 
 ```{r direction_map_3_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(direction_plot_directory,"map_3.png"))
+```
+
+</div>
+</div>
+
+---
+
+These are direction maps for each major subclade: *Ctenotus*, *Lerista*, and "Other".
+
+<div class = "row">
+<div class = "col-md-4">
+
+#### *Ctenotus*
+
+```{r directions_map_ctenotus, echo=TRUE}
+node_list <- c(222:309)
+directions_ctenotus <- direction_data[which(direction_data$node %in% node_list),]
+
+xmin <- min(direction_data$x)
+xmax <- max(direction_data$x)
+ymin <- min(direction_data$y)
+ymax <- max(direction_data$y)
+
+directions_ctenotus_factored <- directions_ctenotus
+directions_ctenotus_factored$true_selection <- as.factor(directions_ctenotus$true_selection)
+all_directions <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_point(data=directions_ctenotus_factored,aes(x=directions_ctenotus_factored$x,y=directions_ctenotus_factored$y,fill=directions_ctenotus_factored$true_selection),pch=21,stroke=NA,size=.75) +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position="none")
+
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.2,2.6),y=c(0,-0.3,-0.4,0.3),xend=c(0.9,1.8,2.2,3),yend=c(0,0.3,0.4,-0.3)))
+line_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color=c(color_1,color_2,color_3,color_4)) +
+  lims(x=c(0,3.1),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+all_directions_labelled <- all_directions + inset_element(line_plot,.65,.8,.99,.99)
+ggsave(paste0(direction_plot_directory,"directions_map_ctenotus.png"),all_directions_labelled,dpi=600)
+```
+
+```{r directions_map_ctenotus_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_map_ctenotus.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### *Lerista*
+
+```{r directions_map_lerista, echo=TRUE}
+node_list <- c(310:389)
+directions_lerista <- direction_data[which(direction_data$node %in% node_list),]
+
+xmin <- min(direction_data$x)
+xmax <- max(direction_data$x)
+ymin <- min(direction_data$y)
+ymax <- max(direction_data$y)
+
+directions_lerista_factored <- directions_lerista
+directions_lerista_factored$true_selection <- as.factor(directions_lerista$true_selection)
+all_directions <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_point(data=directions_lerista_factored,aes(x=directions_lerista_factored$x,y=directions_lerista_factored$y,fill=directions_lerista_factored$true_selection),pch=21,stroke=NA,size=.75) +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position="none")
+
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.2,2.6),y=c(0,-0.3,-0.4,0.3),xend=c(0.9,1.8,2.2,3),yend=c(0,0.3,0.4,-0.3)))
+line_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color=c(color_1,color_2,color_3,color_4)) +
+  lims(x=c(0,3.1),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+all_directions_labelled <- all_directions + inset_element(line_plot,.65,.8,.99,.99)
+ggsave(paste0(direction_plot_directory,"directions_map_lerista.png"),all_directions_labelled,dpi=600)
+```
+
+```{r directions_map_lerista_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_map_lerista.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### Other
+
+```{r directions_map_other, echo=TRUE}
+node_list <- c(390:435)
+directions_other <- direction_data[which(direction_data$node %in% node_list),]
+
+xmin <- min(direction_data$x)
+xmax <- max(direction_data$x)
+ymin <- min(direction_data$y)
+ymax <- max(direction_data$y)
+
+directions_other_factored <- directions_other
+directions_other_factored$true_selection <- as.factor(directions_other$true_selection)
+all_directions <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_point(data=directions_other_factored,aes(x=directions_other_factored$x,y=directions_other_factored$y,fill=directions_other_factored$true_selection),pch=21,stroke=NA,size=.75) +
+  scale_fill_manual(values=c(color_1,color_2,color_3,color_4)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position="none")
+
+line_data <- data.frame(cbind(x=c(0.1,1.2,2.2,2.6),y=c(0,-0.3,-0.4,0.3),xend=c(0.9,1.8,2.2,3),yend=c(0,0.3,0.4,-0.3)))
+line_plot <- ggplot(line_data) +
+  geom_segment(x=line_data$x,xend=line_data$xend,y=line_data$y,yend=line_data$yend,arrow=arrow(ends="both",type="closed",length=unit(0.25,"cm")),linewidth=2,color=c(color_1,color_2,color_3,color_4)) +
+  lims(x=c(0,3.1),y=c(-0.5,0.5)) +
+  coord_fixed() +
+  theme_void()
+
+all_directions_labelled <- all_directions + inset_element(line_plot,.65,.8,.99,.99)
+ggsave(paste0(direction_plot_directory,"directions_map_other.png"),all_directions_labelled,dpi=600)
+```
+
+```{r directions_map_other_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_map_other.png"))
 ```
 
 </div>
