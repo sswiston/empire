@@ -23,9 +23,10 @@ sim_directory <- paste0("./simulations/output/",name,"/")
 outpath <- paste0(sim_directory,"noisy")
 
 sim_tree <- ape::read.tree(paste0(sim_directory,"true.tree.txt"))
+n_taxa <- length(sim_tree$tip.label)
 sim_V <- read.csv(paste0(sim_directory,"true.V.tsv"),sep="\t")
 sim_XY <- read.csv(paste0(sim_directory,"true.XY.tsv"),sep="\t")
-sim_data <- cbind(sim_XY[,2:3],sim_V[,2:4])
+sim_data <- cbind(sim_XY[1:n_taxa,2:3],sim_V[1:n_taxa,2:4])
 sim_data$taxon <- sim_tree$tip.label
 
 # Adding noise to the tip data

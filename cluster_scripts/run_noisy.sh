@@ -15,4 +15,4 @@ END=$( date '+%F_%H:%M:%S' )
 echo $END
 
 T=$(printf '\t')
-echo "$INF$T$START$T$END" >> /storage1/fs1/michael.landis/Active/ellipses/joblogs/run_log.txt
+echo "$INF$T$START$T$END" >> /storage1/fs1/michael.landis/Active/empire/joblogs/run_log.txt
