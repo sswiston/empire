@@ -16,11 +16,7 @@ CONDITION <- args[2]
 print(paste0("Number: ",NUMBER))
 print(paste0("Condition: ",CONDITION))
 
-if (CONDITION == "normal") {
-	name <- paste0("skinks.",NUMBER)
-} else {
-	name <- paste0(CONDITION,".skinks.",NUMBER)
-}
+name <- paste0(CONDITION,".skinks.",NUMBER)
 
 if (CONDITION=="under_prior") {
   testing_conditions <- c("under_prior")
@@ -60,7 +56,7 @@ mcmc <- make_MCMC(tree,
                   prior_sigma_y=distributions3::Uniform(0,10),
                   prior_sigma_r=distributions3::Uniform(0,10),
                   prior_sigma_s=distributions3::Uniform(0,10),
-                  prior_sigma_a=distributions3::Uniform(0,10),
+                  prior_sigma_a=distributions3::Uniform(0,40),
                   prior_mu=distributions3::Normal(mean(data$a),(max(data$a)-min(data$a))),
                   prior_kappa=distributions3::Uniform(0,10),
                   proposal_weights=list(sigma_x=5,
