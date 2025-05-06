@@ -10,9 +10,9 @@ if [ $# == 2 ]; then
 fi
 
 if [ $# == 1 ]; then
-	CONDITION="normal"
+	CONDITION="standard"
 	NUMBER=$1
-	NAME="skinks.$NUMBER"
+	NAME="$CONDITION.skinks.$NUMBER"
 
 fi
 

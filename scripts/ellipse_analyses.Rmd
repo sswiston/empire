@@ -62,9 +62,9 @@ other_plot_directory <- paste0(plot_directory,"other/")
 tree_plot_directory <- paste0(plot_directory,"trees/")
 
 cluster_directory <- "/Volumes/michael.landis/Active/empire/"
-data_directory <- paste0(cluster_directory,"skinks/output/skinks.001/")
+data_directory <- paste0(cluster_directory,"skinks/output/test.001/")
 data_directory_2 <- paste0(cluster_directory,"skinks/output/skinks.008/")
-data_directory_shuffled <- paste0(cluster_directory,"skinks/output/shuffled.skinks.001/")
+data_directory_shuffled <- paste0(cluster_directory,"skinks/output/test.003/")
 sim_prefix <- paste0(cluster_directory,"simulations/output/full.sim.")
 ```
 
@@ -94,6 +94,8 @@ if (plot_theme == "light") {
   color_4 <- "mediumpurple"
 }
 ```
+
+---
 
 ### Example Ellipses
 
@@ -274,10 +276,10 @@ And here are all of the modern ellipses, colored by clade.
 ellipse_data_grouped <- ellipse_data
 for (i in 1:nrow(ellipse_data_grouped)) {
   taxon <- as.character(ellipse_data_grouped$taxon[i])
-  clade <- "Other"
+  clade <- "Third Clade"
   if (grepl("Ctenotus", taxon, fixed=TRUE)) {clade <- "Ctenotus"}
   if (grepl("Lerista", taxon, fixed=TRUE)) {clade <- "Lerista"}
-  if (grepl("Notoscincus ornatus", taxon, fixed=TRUE)) {clade <- "Excluded"}
+  if (grepl("Notoscincus ornatus", taxon, fixed=TRUE)) {clade <- "X"}
   ellipse_data_grouped$Clade[i] <- clade
 }
 
@@ -301,14 +303,16 @@ node_directions <- ggplot(spheno_shapes) +
   lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
   geom_sf(fill=shape_color,color=NA) +
   geom_polygon(data=polygons_data,aes(x=x,y=y,group=taxon,color=Clade),fill=NA,lwd=.25) +
-  #geom_text(data=ellipse_data_grouped,aes(x=x,y=y,label=taxon),color=lines_color,size=2,fontface="bold",check_overlap=TRUE) +
-  scale_color_manual(values=c(color_1,color_2,color_3,color_4)) +
+  scale_color_manual(values=c(color_1,color_2,color_3,color_4), 
+                     labels=c(bquote(italic(.("Ctenotus"))), bquote(italic(.("Lerista"))), "Third Clade", "Other"),
+                     guide=guide_legend(override.aes=list(linetype=c(0,0,0,0),fill=c(color_1,color_2,color_3,color_4)))) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color),
         legend.position=c(.85,.8),
         legend.title=element_text(color=lines_color),
-        legend.text=element_text(color=lines_color))
+        legend.text=element_text(color=lines_color),
+        legend.key.size=unit(.4,"cm"))
 
 ggsave(paste0(range_plot_directory,"ellipses_by_clade.png"),node_directions,dpi=600,width=7,height=5)
 ```
@@ -408,7 +412,7 @@ include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
 
 ### Phylogenetic Tree
 
-Here is the tree being used, including node numbers. Three major monophyletic clades are identified: *Ctenotus*, *Lerista*, and "other genera". The "other genera" clade includes all other Australian sphenomorphine skinks, except *Notoscincus ornatus*, which is sister to the clade containing both *Ctenotus* and *Lerista*.
+Here is the tree being used, including node numbers. Three major monophyletic clades are identified: *Ctenotus*, *Lerista*, and "Third Clade". The "Third Clade" includes all other Australian sphenomorphine skinks, except *Notoscincus ornatus*, which is sister to the clade containing both *Ctenotus* and *Lerista*.
 
 ```{r plot_tree, echo=TRUE}
 tree_2 <- groupClade(tree,c(222,310,390))
@@ -417,7 +421,7 @@ tree_plot <- ggtree(tree_2,aes(color=group),layout="dendrogram") +
   guides(color="none") +
   geom_cladelab(node=222,label="Ctenotus, 89 sp.",fontsize=12,barsize=1,textcolor=color_2,barcolor=color_2,offset=8,vjust=1.5,hjust=.5) +
   geom_cladelab(node=310,label="Lerista, 81 sp.",fontsize=12,barsize=1,textcolor=color_3,barcolor=color_3,offset=8,vjust=1.5,hjust=.5) +
-  geom_cladelab(node=390,label="Other, 47 sp.",fontsize=12,barsize=1,textcolor=color_4,barcolor=color_4,offset=8,vjust=1.5,hjust=.5) +
+  geom_cladelab(node=390,label="Third Clade, 47 sp.",fontsize=12,barsize=1,textcolor=color_4,barcolor=color_4,offset=8,vjust=1.5,hjust=.5) +
   geom_tiplab() +
   geom_nodelab(geom="label",aes(label=node),fill=background_color,angle=0,vjust=0) +
   ggplot2::xlim(10,-38) +
@@ -464,7 +468,7 @@ ggsave(paste0(tree_plot_directory,"tree_lerista.png"),tree_plot_lerista,dpi=600,
 include_graphics(paste0(tree_plot_directory,"tree_lerista.png"))
 ```
 
-```{r plot_tree_other, echo=TRUE}
+```{r plot_tree_thirdclade, echo=TRUE}
 tree_other <- treeio::tree_subset(tree,node=390,levels_back=0)
 tree_plot_other <- ggtree(tree_other,color=color_4) +
   geom_tiplab(color=color_4) +
@@ -472,11 +476,11 @@ tree_plot_other <- ggtree(tree_other,color=color_4) +
   ggplot2::xlim(0,42) +
   theme(plot.background=element_rect(fill=background_color,color=NA),
         panel.background=element_rect(fill=background_color,color=NA))
-ggsave(paste0(tree_plot_directory,"tree_other.png"),tree_plot_other,dpi=600,height=20,width=10)
+ggsave(paste0(tree_plot_directory,"tree_thirdclade.png"),tree_plot_other,dpi=600,height=20,width=10)
 ```
 
-``` {r tree_plots_other_show, eval=TRUE, results=TRUE} 
-include_graphics(paste0(tree_plot_directory,"tree_other.png"))
+``` {r tree_plots_thirdclade_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(tree_plot_directory,"tree_thirdclade.png"))
 ```
 
 ---
@@ -604,7 +608,7 @@ include_graphics(paste0(simulation_plot_directory,"coverage.png"))
 
 ---
 
-### Sensitivity to Extinction
+### Sensitivity to Missing Taxa
 
 These simulations represent a scenario where 50% of species either go extinct before the present, or are not sampled for other reasons. Root values are not recovered especially well with or without extinction, although extinction does lead to a few extreme outliers which are not seen when the model is correctly specified (for example, inferring root values for $x$ and $y$ on the order of 10,000). It is not clear why this happens.
 
@@ -949,11 +953,107 @@ include_graphics(paste0(simulation_plot_directory,"rase.png"))
 
 ## Skink Analyses
 
+### Parameter Estimates
+
+<div class = "row">
+<div class = "col-md-4">
+
+Here are the estimates for all model parameters related to the stochastic movement of ellipses over time. I might need to rerun this analysis because it seems like $\sigma_a$ is being limited by the prior.
+
+```{r param_estimates}
+# SKINK ANALYSIS -- DO NOT RERUN WITHOUT NEW DATA
+# param_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa")
+# burnin <- 20000
+# length <- 200000
+# data_model <- read.table(paste0(data_directory,"model_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# model_results <- data.frame(matrix(NA,ncol=4,nrow=7))
+# colnames(model_results) <- c("Parameter","Estimate","Lower 95% HPD","Upper 95% HPD")
+# model_results$Parameter <- param_list
+# for (i in 1:length(param_list)) {
+#   param <- param_list[i]
+#   index <- which(colnames(data_model)==param)
+#   model_results$Estimate[i] <- round(mean(data_model[,index]),3)
+#   model_results$`Lower 95% HPD`[i] <- round(HDInterval::hdi(data_model[,index])[[1]],3)
+#   model_results$`Upper 95% HPD`[i] <- round(HDInterval::hdi(data_model[,index])[[2]],3)
+# }
+# 
+# plot_param <- function(param, name) {
+#   index <- which(colnames(data_model)==param)
+#   mean <- mean(data_model[,index])
+#   hdlow <- HDInterval::hdi(data_model[,index])[[1]]
+#   hdhigh <- HDInterval::hdi(data_model[,index])[[2]]
+#   min <- min(data_model[,index])
+#   max <- max(data_model[,index])
+#   ymax <- max(density(data_model[,index])$y)
+#   plot <- ggplot(data_model,aes_string(x=param,y="..density..")) +
+#     geom_density(color=lines_color) +
+#     lims(x=c(min,max)) +
+#     labs(x=NULL,y=NULL) +
+#     geom_vline(xintercept=mean,color="red") +
+#     geom_vline(xintercept=hdlow,color=lines_color,lty="dotted") +
+#     geom_vline(xintercept=hdhigh,color=lines_color,lty="dotted") +
+#     annotate(geom="text",label=name,x=min,y=ymax,hjust="inward",vjust="inward",color=lines_color) +
+#     theme_bw() +
+#     theme(panel.border = element_rect(color=lines_color,linewidth=2),
+#           panel.background = element_rect(fill=background_color,color=NA),
+#           plot.background = element_rect(fill=background_color,color=NA),
+#           axis.text = element_text(color=lines_color),
+#           axis.ticks = element_line(color=lines_color),
+#           panel.grid.minor=element_blank(),
+#           panel.grid.major=element_blank(),
+#           aspect.ratio=1,
+#           legend.position="none",
+#           plot.margin=margin(8,8,8,8,"pt"))
+#   return(plot)
+# }
+# 
+# dummy_data <- data.frame(matrix(data=c(0,0,1,1,0,1,0,1),ncol=2,nrow=4))
+# colnames(dummy_data) <- c("x","y")
+# legend_plot <- ggplot(data=dummy_data,x=x,y=y) +
+#   lims(x=c(0,1),y=c(0,1)) +
+#   geom_segment(x=.2,y=.8,xend=.8,yend=.8,color="red") +
+#   geom_segment(x=.2,y=.35,xend=.8,yend=.35,color=lines_color,lty="dotted") +
+#   annotate(geom="text",label="Posterior Mean",x=.5,y=.65,hjust=.5,color=lines_color) +
+#   annotate(geom="text",label="95% HPD Interval",x=.5,y=.2,hjust=.5,color=lines_color) +
+#   theme_bw() +
+#   theme(panel.border = element_blank(),
+#       panel.background = element_rect(fill=background_color,color=NA),
+#       plot.background = element_rect(fill=background_color,color=NA),
+#       axis.text = element_blank(),
+#       axis.ticks = element_blank(),
+#       panel.grid.minor=element_blank(),
+#       panel.grid.major=element_blank(),
+#       aspect.ratio=1,
+#       legend.position="none",
+#       plot.margin=margin(8,8,8,8,"pt"))
+# 
+# plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+# plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+# plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
+# plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
+# plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
+# plot_mu <- plot_param("mu",bquote(mu))
+# plot_kappa <- plot_param("kappa",bquote(kappa))
+# 
+# parameter_plot <- plot_sigma_x + plot_sigma_y + plot_sigma_r + plot_sigma_s + plot_sigma_a + plot_mu + plot_kappa + legend_plot + plot_layout(ncol = 4) & theme(plot.background=element_rect(fill=background_color,color=NA))
+# ggsave(paste0(other_plot_directory,"parameters.png"),parameter_plot,dpi=600,width=8,height=4)
+```
+
+</div>
+<div class = "col-md-8">
+
+``` {r param_estimates_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(other_plot_directory,"parameters.png"))
+```
+
+</div>
+</div>
+
+---
+
 ### Direction Lines
 
 These are results for the empirical analyses of *Sphenomorphus* skinks. Direction line plots are averaged over the entire posterior sample for all nodes, but the posterior is thinned (1 per 500 iterations) to reduce computation time.
-
----
 
 <div class = "row">
 <div class = "col-md-3">
@@ -1490,8 +1590,6 @@ ggsave(paste0(direction_plot_directory,"true_direction_probs_shuffled.png"),plot
 </div>
 </div>
 
----
-
 <div class = "row">
 <div class = "col-md-3">
 
@@ -1523,8 +1621,6 @@ include_graphics(paste0(direction_plot_directory,"true_direction_probs_shuffled.
 </div>
 </div>
 
----
-
 <div class = "row">
 <div class = "col-md-10">
 
@@ -1551,9 +1647,7 @@ include_graphics(paste0(direction_plot_directory,"direction_circle.png"))
 </div>
 </div>
 
----
-
-These are direction line plots for each major subclade: *Ctenotus*, *Lerista*, and "Other".
+These are direction line plots for each major subclade: *Ctenotus*, *Lerista*, and "Third Clade".
 
 <div class = "row">
 <div class = "col-md-4">
@@ -1694,17 +1788,17 @@ include_graphics(paste0(direction_plot_directory,"directions_lerista.png"))
 </div>
 <div class = "col-md-4">
 
-#### Other
+#### Third Clade
 
-```{r directions_other, echo=TRUE}
+```{r directions_thirdclade, echo=TRUE}
 node_list <- c(390:435)
-directions_other <- direction_data[which(direction_data$node %in% node_list),]
+directions_thirdclade <- direction_data[which(direction_data$node %in% node_list),]
 
 # Getting true direction line counts
-count_0 <- sum(directions_other$true_selection == 0)
-count_1 <- sum(directions_other$true_selection == 1)
-count_2 <- sum(directions_other$true_selection == 2)
-count_3 <- sum(directions_other$true_selection == 3)
+count_0 <- sum(directions_thirdclade$true_selection == 0)
+count_1 <- sum(directions_thirdclade$true_selection == 1)
+count_2 <- sum(directions_thirdclade$true_selection == 2)
+count_3 <- sum(directions_thirdclade$true_selection == 3)
 
 # Performing Chi Square test
 p <- chisq.test(c(count_0,count_1,count_2,count_3))$p.value
@@ -1752,11 +1846,11 @@ direction_plot <- ggplot(line_data) +
 
 # Combining direction lines with bars
 plot_with_arrows <- bar_plot + inset_element(direction_plot,-0.025,-0.05,1.025,0.45)
-ggsave(paste0(direction_plot_directory,"directions_other.png"),plot_with_arrows,dpi=600)
+ggsave(paste0(direction_plot_directory,"directions_thirdclade.png"),plot_with_arrows,dpi=600)
 ```
 
-```{r directions_other_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(direction_plot_directory,"directions_other.png"))
+```{r directions_thirdclade_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_thirdclade.png"))
 ```
 
 </div>
@@ -1886,9 +1980,7 @@ include_graphics(paste0(direction_plot_directory,"map_3.png"))
 </div>
 </div>
 
----
-
-These are direction maps for each major subclade: *Ctenotus*, *Lerista*, and "Other".
+These are direction maps for each major subclade: *Ctenotus*, *Lerista*, and "Third Clade".
 
 <div class = "row">
 <div class = "col-md-4">
@@ -1975,19 +2067,19 @@ include_graphics(paste0(direction_plot_directory,"directions_map_lerista.png"))
 </div>
 <div class = "col-md-4">
 
-#### Other
+#### Third Clade
 
-```{r directions_map_other, echo=TRUE}
+```{r directions_map_thirdclade, echo=TRUE}
 node_list <- c(390:435)
-directions_other <- direction_data[which(direction_data$node %in% node_list),]
+directions_thirdclade <- direction_data[which(direction_data$node %in% node_list),]
 
 xmin <- min(direction_data$x)
 xmax <- max(direction_data$x)
 ymin <- min(direction_data$y)
 ymax <- max(direction_data$y)
 
-directions_other_factored <- directions_other
-directions_other_factored$true_selection <- as.factor(directions_other$true_selection)
+directions_other_factored <- directions_thirdclade
+directions_other_factored$true_selection <- as.factor(directions_thirdclade$true_selection)
 all_directions <- ggplot(spheno_shapes) +
   lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
   geom_sf(fill=shape_color,color=NA) +
@@ -2006,11 +2098,11 @@ line_plot <- ggplot(line_data) +
   theme_void()
 
 all_directions_labelled <- all_directions + inset_element(line_plot,.65,.8,.99,.99)
-ggsave(paste0(direction_plot_directory,"directions_map_other.png"),all_directions_labelled,dpi=600)
+ggsave(paste0(direction_plot_directory,"directions_map_thirdclade.png"),all_directions_labelled,dpi=600)
 ```
 
-```{r directions_map_other_show, eval=TRUE, results=TRUE}
-include_graphics(paste0(direction_plot_directory,"directions_map_other.png"))
+```{r directions_map_thirdclade_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(direction_plot_directory,"directions_map_thirdclade.png"))
 ```
 
 </div>
@@ -2371,8 +2463,6 @@ include_graphics(paste0(direction_plot_directory,"map_est.png"))
 
 ```
 
----
-
 ### Reconstruction Tree
 
 <div class = "row">
@@ -2381,6 +2471,25 @@ include_graphics(paste0(direction_plot_directory,"map_est.png"))
 Here we add the tree structure to the map instead of the ellipses and splitting directions.
 
 ```{r tree_map, echo=TRUE}
+ctenotus <- c(222:309)
+lerista <- c(310:389)
+other <- c(390:435)
+excluded <- c(219:221)
+
+for (i in 1:nrow(ellipse_data)) {
+  taxon <- as.character(ellipse_data$taxon[i])
+  number <- which(tree$tip.label == taxon)
+  if (grepl("Ctenotus", taxon, fixed=TRUE)) {ctenotus <- c(ctenotus, number)}
+  else if (grepl("Lerista", taxon, fixed=TRUE)) {lerista <- c(lerista, number)}
+  else if (grepl("Notoscincus ornatus", taxon, fixed=TRUE)) {excluded <- c(excluded, number)}
+  else {other <- c(other, number)}
+}
+
+ctenotus <- sort(ctenotus)
+lerista <- sort(lerista)
+other <- sort(other)
+excluded <- sort(excluded)
+
 node_locations <- c()
 for (i in 1:length(tree$tip.label)) {
   node_locations$node[i] <- i
@@ -2393,6 +2502,21 @@ node_locations$x <- c(node_locations$x, node_data$scenario_x)
 node_locations$y <- c(node_locations$y, node_data$scenario_y)
 node_locations <- data.frame(node_locations)
 
+for (i in 1:nrow(node_locations)) {
+  if (node_locations$node[i] %in% ctenotus) {clade <- "ctenotus"}
+  if (node_locations$node[i] %in% lerista) {clade <- "lerista"}
+  if (node_locations$node[i] %in% other) {clade <- "thirdclade"}
+  if (node_locations$node[i] %in% excluded) {clade <- "x"}
+  node_locations$Clade[i] <- clade
+}
+
+node_locations$highlight <- rep("none",nrow(node_locations))
+node_locations$highlight[219] <- "root"
+node_locations$highlight[222] <- "root"
+node_locations$highlight[310] <- "root"
+node_locations$highlight[390] <- "root"
+node_locations$highlight[1:length(tree$tip.label)] <- "tip"
+
 tree_data <- data.frame(tree$edge)
 colnames(tree_data) <- c("N1", "N2")
 edge_points <- c()
@@ -2403,6 +2527,11 @@ for (i in 1:nrow(tree_data)) {
   node_2 <- tree_data$N2[i]
   edge_points$X2[i] <- node_locations$x[which(node_locations$node==node_2)]
   edge_points$Y2[i] <- node_locations$y[which(node_locations$node==node_2)]
+  if (node_1 %in% ctenotus) {clade <- "ctenotus"}
+  if (node_1 %in% lerista) {clade <- "lerista"}
+  if (node_1 %in% other) {clade <- "thirdclade"}
+  if (node_1 %in% excluded) {clade <- "x"}
+  edge_points$Clade[i] <- clade
 }
 edge_points <- data.frame(edge_points)
 
@@ -2414,12 +2543,23 @@ ymax <- max(node_locations$y)
 node_tree <- ggplot(spheno_shapes) +
   lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
   geom_sf(fill=shape_color,color=NA) +
-  geom_segment(data=edge_points,aes(x=X1,y=Y1,xend=X2,yend=Y2),color=lines_color,lty="dotted",lwd=.25) +
-  geom_text(data=node_locations,aes(x=x,y=y,label=node),color=lines_color,size=2,fontface="bold",check_overlap=TRUE) +
+  geom_segment(data=edge_points,aes(x=X1,y=Y1,xend=X2,yend=Y2,color=Clade),lty="dotted",lwd=.25) +
+  geom_point(data=node_locations,aes(x=x,y=y,color=Clade,pch=highlight),fill="white") +
+  scale_shape_manual(values=c(20,13,21),labels=c("Internal Node", "Clade Root", "Tip")) +
+  scale_color_manual(values=c(color_1,color_2,color_3,color_4), labels=c(bquote(italic(.("Ctenotus"))), bquote(italic(.("Lerista"))), "Third Clade", "Root & Other")) +
+  labs(color="Clade",pch="Node Type") +
+  guides(shape=guide_legend(override.aes=list(color=lines_color,fill=NA),keyheight=0.1),
+         color=guide_legend(keyheight=0.1)) +
   theme_void() +
   theme(panel.border = element_rect(color=lines_color,linewidth=2),
         panel.background = element_rect(fill=background_color),
-        legend.position="none")
+        legend.position=c(.985,.98),
+        legend.justification = c("right","top"),
+        legend.title = element_text(color=lines_color,size=12),
+        legend.text = element_text(color=lines_color,size=8),
+        legend.box.background = element_rect(fill=background_color, color=lines_color),
+        legend.margin = margin(4,4,4,4),
+        legend.spacing.y = unit(.1,"cm"))
 
 ggsave(paste0(tree_plot_directory,"map_tree.png"),node_tree,dpi=600,width=7,height=5)
 ```
@@ -2429,6 +2569,114 @@ ggsave(paste0(tree_plot_directory,"map_tree.png"),node_tree,dpi=600,width=7,heig
 
 ```{r tree_map_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(tree_plot_directory,"map_tree.png"))
+```
+
+</div>
+</div>
+
+<div class = "row">
+<div class = "col-md-4">
+
+#### *Ctenotus*
+
+```{r tree_map_ctenotus, echo=TRUE}
+node_locations_ctenotus <- node_locations[which(node_locations$Clade=="ctenotus"),]
+edge_points_ctenotus <- edge_points[which(edge_points$Clade=="ctenotus"),]
+
+node_tree <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_segment(data=edge_points_ctenotus,aes(x=X1,y=Y1,xend=X2,yend=Y2),color=color_1,lty="dotted",lwd=.25) +
+  geom_point(data=node_locations_ctenotus,aes(x=x,y=y,pch=highlight),color=color_1,fill="white") +
+  scale_shape_manual(values=c(20,13,21),labels=c("Internal Node", "Clade Root", "Tip")) +
+  labs(color="Clade",pch="Node Type") +
+  guides(shape=guide_legend(override.aes=list(color=lines_color,fill=NA),keyheight=0.1)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position=c(.985,.98),
+        legend.justification = c("right","top"),
+        legend.title = element_text(color=lines_color,size=12),
+        legend.text = element_text(color=lines_color,size=8),
+        legend.box.background = element_rect(fill=background_color, color=lines_color),
+        legend.margin = margin(4,4,4,4),
+        legend.spacing.y = unit(.1,"cm"))
+
+ggsave(paste0(tree_plot_directory,"map_tree_ctenotus.png"),node_tree,dpi=600,width=7,height=5)
+```
+
+```{r tree_map_ctenotus_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(tree_plot_directory,"map_tree_ctenotus.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### *Lerista*
+
+```{r tree_map_lerista, echo=TRUE}
+node_locations_lerista <- node_locations[which(node_locations$Clade=="lerista"),]
+edge_points_lerista <- edge_points[which(edge_points$Clade=="lerista"),]
+
+node_tree <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_segment(data=edge_points_lerista,aes(x=X1,y=Y1,xend=X2,yend=Y2),color=color_2,lty="dotted",lwd=.25) +
+  geom_point(data=node_locations_lerista,aes(x=x,y=y,pch=highlight),color=color_2,fill="white") +
+  scale_shape_manual(values=c(20,13,21),labels=c("Internal Node", "Clade Root", "Tip")) +
+  labs(color="Clade",pch="Node Type") +
+  guides(shape=guide_legend(override.aes=list(color=lines_color,fill=NA),keyheight=0.1)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position=c(.985,.98),
+        legend.justification = c("right","top"),
+        legend.title = element_text(color=lines_color,size=12),
+        legend.text = element_text(color=lines_color,size=8),
+        legend.box.background = element_rect(fill=background_color, color=lines_color),
+        legend.margin = margin(4,4,4,4),
+        legend.spacing.y = unit(.1,"cm"))
+
+ggsave(paste0(tree_plot_directory,"map_tree_lerista.png"),node_tree,dpi=600,width=7,height=5)
+```
+
+```{r tree_map_lerista_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(tree_plot_directory,"map_tree_lerista.png"))
+```
+
+</div>
+<div class = "col-md-4">
+
+#### Third Clade
+
+```{r tree_map_thirdclade, echo=TRUE}
+node_locations_thirdclade <- node_locations[which(node_locations$Clade=="thirdclade"),]
+edge_points_thirdclade <- edge_points[which(edge_points$Clade=="thirdclade"),]
+
+node_tree <- ggplot(spheno_shapes) +
+  lims(x=c(xmin,xmax),y=c(ymin,ymax)) +
+  geom_sf(fill=shape_color,color=NA) +
+  geom_segment(data=edge_points_thirdclade,aes(x=X1,y=Y1,xend=X2,yend=Y2),color=color_3,lty="dotted",lwd=.25) +
+  geom_point(data=node_locations_thirdclade,aes(x=x,y=y,pch=highlight),color=color_3,fill="white") +
+  scale_shape_manual(values=c(20,13,21),labels=c("Internal Node", "Clade Root", "Tip")) +
+  labs(color="Clade",pch="Node Type") +
+  guides(shape=guide_legend(override.aes=list(color=lines_color,fill=NA),keyheight=0.1)) +
+  theme_void() +
+  theme(panel.border = element_rect(color=lines_color,linewidth=2),
+        panel.background = element_rect(fill=background_color),
+        legend.position=c(.985,.98),
+        legend.justification = c("right","top"),
+        legend.title = element_text(color=lines_color,size=12),
+        legend.text = element_text(color=lines_color,size=8),
+        legend.box.background = element_rect(fill=background_color, color=lines_color),
+        legend.margin = margin(4,4,4,4),
+        legend.spacing.y = unit(.1,"cm"))
+
+ggsave(paste0(tree_plot_directory,"map_tree_thirdclade.png"),node_tree,dpi=600,width=7,height=5)
+```
+
+```{r tree_map_thirdclade_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(tree_plot_directory,"map_tree_thirdclade.png"))
 ```
 
 </div>
