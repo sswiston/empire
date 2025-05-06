@@ -1,4 +1,4 @@
-RUN_LIST=$(seq -w 001 001)
+RUN_LIST=$(seq -w 001 100)
 
 for i in ${RUN_LIST[@]}
 do
