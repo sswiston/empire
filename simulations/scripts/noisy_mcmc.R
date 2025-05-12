@@ -30,19 +30,19 @@ sim_data <- cbind(sim_XY[1:n_taxa,2:3],sim_V[1:n_taxa,2:4])
 sim_data$taxon <- sim_tree$tip.label
 
 # Adding noise to the tip data
-sd_x <- sd(sim_data$x)
-sd_y <- sd(sim_data$y)
-sd_r <- sd(sim_data$r)
-sd_s <- sd(sim_data$s)
-sd_a <- sd(sim_data$a)
+x_error <- (max(sim_data$x) - min(sim_data$x)) * .1
+y_error <- (max(sim_data$y) - min(sim_data$y)) * .1
+r_error <- (max(sim_data$r) - min(sim_data$r)) * .1
+s_error <- (max(sim_data$s) - min(sim_data$s)) * .1
+a_error <- (max(sim_data$a) - min(sim_data$a)) * .1
 
 noisy_data <- sim_data
 for (i in 1:nrow(noisy_data)) {
-  noisy_data$x[i] <- noisy_data$x[i] + rnorm(1,0,sd_x)
-  noisy_data$y[i] <- noisy_data$y[i] + rnorm(1,0,sd_y)
-  noisy_data$r[i] <- noisy_data$r[i] + rnorm(1,0,sd_r)
-  noisy_data$s[i] <- noisy_data$s[i] + rnorm(1,0,sd_s)
-  noisy_data$a[i] <- noisy_data$a[i] + rnorm(1,0,sd_a)
+  noisy_data$x[i] <- noisy_data$x[i] + runif(1, -1 * x_error, x_error)
+  noisy_data$y[i] <- noisy_data$y[i] + runif(1, -1 * y_error, y_error)
+  noisy_data$r[i] <- noisy_data$r[i] + runif(1, -1 * r_error, r_error)
+  noisy_data$s[i] <- noisy_data$s[i] + runif(1, -1 * s_error, s_error)
+  noisy_data$a[i] <- noisy_data$a[i] + runif(1, -1 * a_error, a_error)
 }
 
 tree <- dataTree$new(tree=sim_tree)
