@@ -62,9 +62,9 @@ other_plot_directory <- paste0(plot_directory,"other/")
 tree_plot_directory <- paste0(plot_directory,"trees/")
 
 cluster_directory <- "/Volumes/michael.landis/Active/empire/"
-data_directory <- paste0(cluster_directory,"skinks/output/test.001/")
-data_directory_2 <- paste0(cluster_directory,"skinks/output/skinks.008/")
-data_directory_shuffled <- paste0(cluster_directory,"skinks/output/test.003/")
+data_directory <- paste0(cluster_directory,"skinks/output/test.001/") # output from skinks.001 under sigma_a prior uniform(0,10) WILL REPLACE
+data_directory_2 <- paste0(cluster_directory,"skinks/output/test.002/") # output from skinks.008 under sigma_a prior uniform(0,10) WILL REPLACE
+data_directory_shuffled <- paste0(cluster_directory,"skinks/output/test.003/") # output from shuffled.skinks.001 under sigma_a prior uniform(0,10) WILL REPLACE
 sim_prefix <- paste0(cluster_directory,"simulations/output/full.sim.")
 ```
 
@@ -735,6 +735,131 @@ include_graphics(paste0(simulation_plot_directory,"sensitivity.png"))
 
 ---
 
+### Sensitivity to Noise
+
+<div class = "row">
+<div class = "col-md-5">
+
+These simulations represent a scenario where the ellipses at the tips have some amount of noise, possibly due to sampling issues. For each simulated dataset, we generate "noise" based on the range of observed values at the tips for a particular parameter ($max - min$). The extra noise for each parameter is $\sim Uniform(-0.1 \times range, 0.1 \times range)$.
+
+```{r noisy, echo=TRUE}
+# SIMULATION NOISE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
+# burnin <- 10000
+# completed_iterations <- 200000
+# params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
+# simulation_numbers <- sprintf("%03.0f", 1:100)
+# nsims <- length(simulation_numbers)
+# sim_data <- data.frame(matrix(ncol=7,nrow=0))
+# row <- 1
+# for (num in simulation_numbers) {
+#   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
+#   directory <- paste0(sim_prefix,num,"/")
+#   if (file.exists(paste0(directory,"noisy/model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"noisy/model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"noisy/model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#   } else {iterations <- 0}
+#   if (iterations >= completed_iterations) {
+#     logfile <- read.csv(paste0(directory,"noisy/model_log.tsv"),sep="\t",skipNul=TRUE)
+#     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
+#     true_vals <- c()
+#     for (i in 1:length(truefile)) {
+#       true_vals$param[i] <- truefile[[i]][1]
+#       true_vals$vals[i] <- paste(truefile[[i]][-1],collapse=",")
+#     }
+#     mcmc <- logfile[-c(1:burnin),]
+#     for (param in params_list) {
+#       param_true <- as.numeric(true_vals$vals[which(true_vals$param==param)])
+#       param_mcmc <- mcmc[[param]]
+#       param_est <- mean(param_mcmc)
+#       param_hpd <- hdi(param_mcmc)
+#       param_hpd_low <- param_hpd[[1]]
+#       param_hpd_high <- param_hpd[[2]]
+#       param_ess <- ess(param_mcmc)
+#       param_row <- c(num,param,param_true,param_est,param_hpd_low,param_hpd_high,param_ess)
+#       sim_data <- rbind(sim_data,param_row)
+#       row <- row + 1
+#     }
+#   }
+# }
+# colnames(sim_data) <- c("sim","param","true","est","hpd_low","hpd_high","ess")
+# write.table(sim_data,file=paste0(simulation_output_directory,"noisy_results.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
+```
+
+``` {r noisy_plots, echo=TRUE} 
+sim_data <- read.csv(paste0(simulation_output_directory,"noisy_results.tsv"),sep="\t")
+sim_data <- sim_data[which(sim_data$ess >= 200),]
+
+plot_param <- function(param, name) {
+  data_subset <- sim_data[which(sim_data$param == param),]
+  high_vals <- sort(data_subset$hpd_high)
+  low_vals <- sort(data_subset$hpd_low)
+  range <- c(low_vals[3],high_vals[length(high_vals)-2])
+  high_limit <- high_vals[length(high_vals)-2] + .5 * (range[2] - range[1])
+  low_limit <- low_vals[3] - .5 * (range[2] - range[1])
+  keep <- c()
+  for (i in 1:nrow(data_subset)) {
+    keep[i] <- TRUE
+    if (data_subset$hpd_high[i] > high_limit) {
+      keep[i] <- FALSE
+    }
+    if (data_subset$hpd_low[i] < low_limit) {
+      keep[i] <- FALSE
+    }
+  }
+  n_outliers <- sum(keep==FALSE)
+  data_subset <- data_subset[keep==TRUE,]
+  min <- min(min(data_subset$hpd_low),min(data_subset$true),min(data_subset$est))
+  max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
+  plot <- ggplot(data_subset, aes(x=true, y=est)) +
+    geom_errorbar(aes(ymin=hpd_low,ymax=hpd_high),linewidth=.25,alpha=.5,color=lines_color) +
+    geom_point(size=.5,pch=16,alpha=.5,color=lines_color) +
+    geom_abline(slope=1,linewidth=.25,color=lines_color) +
+    labs(x=NULL,y=NULL) +
+    annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
+    annotate(geom="text",label=paste("Outliers: ",n_outliers),x=max,y=min,hjust="inward",vjust="inward",color=lines_color) +
+    lims(x=c(min,max),y=c(min,max)) +
+    theme_bw() +
+    theme(panel.border = element_rect(color=lines_color,linewidth=2),
+          panel.background = element_rect(fill=background_color,color=NA),
+          axis.text = element_text(color=lines_color),
+          axis.ticks = element_line(color=lines_color),
+          aspect.ratio=1,
+          panel.grid.minor=element_blank(),
+          panel.grid.major=element_blank(),
+          legend.position="none",
+          plot.margin=margin(4,4,4,4,"pt"))
+  return(plot)
+}
+
+plot_sigma_x <- plot_param("sigma_x",bquote(sigma[x]))
+plot_sigma_y <- plot_param("sigma_y",bquote(sigma[y]))
+plot_sigma_r <- plot_param("sigma_r",bquote(sigma[r]))
+plot_sigma_s <- plot_param("sigma_s",bquote(sigma[s]))
+plot_sigma_a <- plot_param("sigma_a",bquote(sigma[a]))
+plot_mu <- plot_param("mu",bquote(mu))
+plot_kappa <- plot_param("kappa",bquote(kappa))
+plot_root_x <- plot_param("root_x",bquote(root[x]))
+plot_root_y <- plot_param("root_y",bquote(root[y]))
+plot_root_r <- plot_param("root_r",bquote(root[r]))
+plot_root_s <- plot_param("root_s",bquote(root[s]))
+plot_root_a <- plot_param("root_a",bquote(root[a]))
+
+noisy_plot <- plot_sigma_x + plot_root_x + plot_sigma_y + plot_root_y + plot_sigma_r + plot_root_r + plot_sigma_s + plot_root_s + plot_sigma_a + plot_root_a + plot_mu + plot_kappa + plot_layout(ncol = 4) & theme(plot.background=element_rect(fill=background_color,color=NA))
+ggsave(paste0(simulation_plot_directory,"noisy.png"),noisy_plot,dpi=600,width=7,height=5)
+```
+
+</div>
+<div class = "col-md-7">
+
+``` {r noisy_plots_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(simulation_plot_directory,"noisy.png"))
+```
+
+</div>
+</div>
+
+---
+
 ### Tree sizes
 
 <div class = "row">
@@ -953,12 +1078,16 @@ include_graphics(paste0(simulation_plot_directory,"rase.png"))
 
 ## Skink Analyses
 
+Right now, the skink analyses use a prior on $\sigma_a$ that is uniform from 0 to 10. This prior appears to be limiting the posterior distribution for this parameter, so I am rerunning the skink analyses using a new prior that is uniform from 0 to 40.
+
+---
+
 ### Parameter Estimates
 
 <div class = "row">
 <div class = "col-md-4">
 
-Here are the estimates for all model parameters related to the stochastic movement of ellipses over time. I might need to rerun this analysis because it seems like $\sigma_a$ is being limited by the prior.
+Here are the estimates for all model parameters related to the stochastic movement of ellipses over time. Note that it seems like $\sigma_a$ is being limited by the prior.
 
 ```{r param_estimates}
 # SKINK ANALYSIS -- DO NOT RERUN WITHOUT NEW DATA
@@ -984,8 +1113,8 @@ Here are the estimates for all model parameters related to the stochastic moveme
 #   hdhigh <- HDInterval::hdi(data_model[,index])[[2]]
 #   min <- min(data_model[,index])
 #   max <- max(data_model[,index])
-#   ymax <- max(density(data_model[,index])$y)
-#   plot <- ggplot(data_model,aes_string(x=param,y="..density..")) +
+#   ymax <- 1
+#   plot <- ggplot(data_model,aes_string(x=param,y="..scaled..")) +
 #     geom_density(color=lines_color) +
 #     lims(x=c(min,max)) +
 #     labs(x=NULL,y=NULL) +
@@ -993,6 +1122,7 @@ Here are the estimates for all model parameters related to the stochastic moveme
 #     geom_vline(xintercept=hdlow,color=lines_color,lty="dotted") +
 #     geom_vline(xintercept=hdhigh,color=lines_color,lty="dotted") +
 #     annotate(geom="text",label=name,x=min,y=ymax,hjust="inward",vjust="inward",color=lines_color) +
+#     annotate(geom="label",label=round(mean,2),x=mean,y=.075,color=lines_color,fill=background_color,size=3,label.padding=unit(.15,"lines")) +
 #     theme_bw() +
 #     theme(panel.border = element_rect(color=lines_color,linewidth=2),
 #           panel.background = element_rect(fill=background_color,color=NA),
@@ -1007,20 +1137,21 @@ Here are the estimates for all model parameters related to the stochastic moveme
 #   return(plot)
 # }
 # 
-# dummy_data <- data.frame(matrix(data=c(0,0,1,1,0,1,0,1),ncol=2,nrow=4))
+# dummy_data <- data.frame(matrix(data=c(.5,.5,.5,.5,.5,.5,.5,.5),ncol=2,nrow=4))
 # colnames(dummy_data) <- c("x","y")
 # legend_plot <- ggplot(data=dummy_data,x=x,y=y) +
 #   lims(x=c(0,1),y=c(0,1)) +
+#   labs(x=NULL,y=NULL) +
 #   geom_segment(x=.2,y=.8,xend=.8,yend=.8,color="red") +
 #   geom_segment(x=.2,y=.35,xend=.8,yend=.35,color=lines_color,lty="dotted") +
-#   annotate(geom="text",label="Posterior Mean",x=.5,y=.65,hjust=.5,color=lines_color) +
-#   annotate(geom="text",label="95% HPD Interval",x=.5,y=.2,hjust=.5,color=lines_color) +
+#   annotate(geom="text",label="Posterior Mean",x=.5,y=.65,hjust=.5,color=lines_color,size=4) +
+#   annotate(geom="text",label="95% HPD Interval",x=.5,y=.2,hjust=.5,color=lines_color,size=4) +
 #   theme_bw() +
-#   theme(panel.border = element_blank(),
+#   theme(panel.border = element_rect(color=background_color,linewidth=2),
 #       panel.background = element_rect(fill=background_color,color=NA),
 #       plot.background = element_rect(fill=background_color,color=NA),
-#       axis.text = element_blank(),
-#       axis.ticks = element_blank(),
+#       axis.text = element_text(color=background_color),
+#       axis.ticks = element_line(color=background_color),
 #       panel.grid.minor=element_blank(),
 #       panel.grid.major=element_blank(),
 #       aspect.ratio=1,
@@ -1036,7 +1167,7 @@ Here are the estimates for all model parameters related to the stochastic moveme
 # plot_kappa <- plot_param("kappa",bquote(kappa))
 # 
 # parameter_plot <- plot_sigma_x + plot_sigma_y + plot_sigma_r + plot_sigma_s + plot_sigma_a + plot_mu + plot_kappa + legend_plot + plot_layout(ncol = 4) & theme(plot.background=element_rect(fill=background_color,color=NA))
-# ggsave(paste0(other_plot_directory,"parameters.png"),parameter_plot,dpi=600,width=8,height=4)
+# ggsave(paste0(other_plot_directory,"parameters.png"),parameter_plot,dpi=600,width=8.5,height=4)
 ```
 
 </div>
@@ -2463,6 +2594,111 @@ include_graphics(paste0(direction_plot_directory,"map_est.png"))
 
 ```
 
+### Ellipse Size
+
+<div class = "row">
+<div class = "col-md-4">
+
+Here we compare the distributions of ellipse sizes for modern ellipses, ancestral ellipses, and the $\mu$ parameter (the size ellipses are attracted to according to the OU process on $a$).
+
+```{r sizes}
+# SKINK ANALYSIS -- DO NOT RERUN WITHOUT NEW DATA
+# xlims <- c(-3,6)
+# ylims <- c(0,1)
+# 
+# burnin <- 20000
+# length <- 200000
+# data_model <- read.table(paste0(data_directory,"model_log.tsv"),sep="\t",header=TRUE)[burnin:length,]
+# 
+# plot_param <- function(param, name) {
+#   index <- which(colnames(data_model)==param)
+#   mean <- mean(data_model[,index])
+#   plot <- ggplot(data_model,aes_string(x=param,y="..scaled..")) +
+#     geom_density(color=lines_color) +
+#     lims(x=xlims,y=ylims) +
+#     labs(x=NULL,y=NULL) +
+#     geom_vline(xintercept=mean,color="red") +
+#     annotate(geom="text",label=name,x=xlims[1],y=ylims[2],hjust="inward",vjust="inward",color=lines_color) +
+#     annotate(geom="label",label=round(mean,2),x=mean,y=.01,color=lines_color,fill=background_color,size=3,label.padding=unit(.15,"lines")) +
+#     theme_bw() +
+#     theme(panel.border = element_rect(color=lines_color,linewidth=2),
+#           panel.background = element_rect(fill=background_color,color=NA),
+#           plot.background = element_rect(fill=background_color,color=NA),
+#           axis.text = element_text(color=lines_color),
+#           axis.ticks = element_line(color=lines_color),
+#           panel.grid.minor=element_blank(),
+#           panel.grid.major=element_blank(),
+#           aspect.ratio=1,
+#           legend.position="none",
+#           plot.margin=margin(8,8,8,8,"pt"))
+#   return(plot)
+# }
+# plot_mu <- plot_param("mu",bquote(mu))
+# 
+# plot_modern <- function(param, name) {
+#   index <- which(colnames(ellipse_data)==param)
+#   mean <- mean(ellipse_data[,index])
+#   plot <- ggplot(ellipse_data,aes_string(x=param,y="..scaled..")) +
+#     geom_density(color=lines_color) +
+#     lims(x=xlims,y=ylims) +
+#     labs(x=NULL,y=NULL) +
+#     geom_vline(xintercept=mean,color="red") +
+#     annotate(geom="text",label=name,x=xlims[1],y=ylims[2],hjust="inward",vjust="inward",color=lines_color) +
+#     annotate(geom="label",label=round(mean,2),x=mean,y=.01,color=lines_color,fill=background_color,size=3,label.padding=unit(.15,"lines")) +
+#     theme_bw() +
+#     theme(panel.border = element_rect(color=lines_color,linewidth=2),
+#           panel.background = element_rect(fill=background_color,color=NA),
+#           plot.background = element_rect(fill=background_color,color=NA),
+#           axis.text = element_text(color=lines_color),
+#           axis.ticks = element_line(color=lines_color),
+#           panel.grid.minor=element_blank(),
+#           panel.grid.major=element_blank(),
+#           aspect.ratio=1,
+#           legend.position="none",
+#           plot.margin=margin(8,8,8,8,"pt"))
+#   return(plot)
+# }
+# plot_modern_a <- plot_modern("a","Modern Ellipses")
+# 
+# plot_ancestral <- function(param, name) {
+#   index <- which(colnames(node_data)==param)
+#   mean <- mean(node_data[,index])
+#   plot <- ggplot(node_data,aes_string(x=paste0("scenario_",param),y="..scaled..")) +
+#     geom_density(color=lines_color) +
+#     lims(x=xlims,y=ylims) +
+#     labs(x=NULL,y=NULL) +
+#     geom_vline(xintercept=mean,color="red") +
+#     annotate(geom="text",label=name,x=xlims[1],y=ylims[2],hjust="inward",vjust="inward",color=lines_color) +
+#     annotate(geom="label",label=round(mean,2),x=mean,y=.01,color=lines_color,fill=background_color,size=3,label.padding=unit(.15,"lines")) +
+#     theme_bw() +
+#     theme(panel.border = element_rect(color=lines_color,linewidth=2),
+#           panel.background = element_rect(fill=background_color,color=NA),
+#           plot.background = element_rect(fill=background_color,color=NA),
+#           axis.text = element_text(color=lines_color),
+#           axis.ticks = element_line(color=lines_color),
+#           panel.grid.minor=element_blank(),
+#           panel.grid.major=element_blank(),
+#           aspect.ratio=1,
+#           legend.position="none",
+#           plot.margin=margin(8,8,8,8,"pt"))
+#   return(plot)
+# }
+# plot_ancestral_a <- plot_ancestral("a","Ancestral Ellipses")
+# 
+# size_plot <- plot_modern_a + plot_ancestral_a + plot_mu + plot_layout(ncol = 3) & theme(plot.background=element_rect(fill=background_color,color=NA))
+# ggsave(paste0(other_plot_directory,"sizes.png"),size_plot,dpi=600,width=12,height=4)
+```
+
+</div>
+<div class = "col-md-8">
+
+``` {r sizes_show, eval=TRUE, results=TRUE} 
+include_graphics(paste0(other_plot_directory,"sizes.png"))
+```
+
+</div>
+</div>
+
 ### Reconstruction Tree
 
 <div class = "row">
@@ -2710,6 +2946,8 @@ Plotting the highest posterior estimates for a cladogenetic event at a node
 <div class = "col-md-6">
 
 Comparing the aridity of posterior daughters to the aridity of random daughters
+
+REMEMBER, WE NEED TO USE GPLATES TO TRANSFORM LOCATIONS INTO HISTORICAL LOCATIONS BEFORE USING RASTERS
 
 ```{r aridity}
 
