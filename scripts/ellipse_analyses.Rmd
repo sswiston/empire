@@ -25,7 +25,7 @@ output:
 
 ### Information
 
-Packages required for these analyses: ape, corrr, devtools, dplyr, empire, ggplot2, ggtree, HDInterval, knitr, mcmcse, patchwork, phytools, rase, sf, spatstat, treeio
+Packages required for these analyses: ape, corrr, devtools, dplyr, empire, geojsonsf, ggplot2, ggtree, HDInterval, httr2, knitr, mcmcse, patchwork, phytools, rase, raster, rgplates, sf, sfheaders, spatstat, treeio
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=FALSE,echo=FALSE,results=FALSE,message=FALSE,warning=FALSE,tidy='styler')
@@ -36,15 +36,20 @@ library(ape)
 library(corrr)
 library(devtools)
 library(dplyr)
+library(geojsonsf)
 library(ggplot2)
 library(ggtree)
 library(HDInterval)
+library(httr2)
 library(knitr)
 library(mcmcse)
 library(patchwork)
 library(phytools)
 library(rase)
+library(raster)
+library(rgplates)
 library(sf)
+library(sfheaders)
 library(spatstat)
 library(treeio)
 ```
@@ -60,12 +65,15 @@ direction_plot_directory <- paste0(plot_directory,"directions/")
 simulation_plot_directory <- paste0(plot_directory,"simulations/")
 other_plot_directory <- paste0(plot_directory,"other/")
 tree_plot_directory <- paste0(plot_directory,"trees/")
+aridity_plot_directory <- paste0(plot_directory,"aridity/")
 
 cluster_directory <- "/Volumes/michael.landis/Active/empire/"
 data_directory <- paste0(cluster_directory,"skinks/output/test.001/") # output from skinks.001 under sigma_a prior uniform(0,10) WILL REPLACE
 data_directory_2 <- paste0(cluster_directory,"skinks/output/test.002/") # output from skinks.008 under sigma_a prior uniform(0,10) WILL REPLACE
 data_directory_shuffled <- paste0(cluster_directory,"skinks/output/test.003/") # output from shuffled.skinks.001 under sigma_a prior uniform(0,10) WILL REPLACE
 sim_prefix <- paste0(cluster_directory,"simulations/output/full.sim.")
+
+aridity_data <- paste0(local_directory,"skinks/data/australia/")
 ```
 
 ```{r ellipse_package, eval=TRUE}
@@ -147,7 +155,7 @@ include_graphics(paste0(other_plot_directory,"example_scenario.png"))
 
 
 
-## Skink Data
+## Empirical Data
 
 ```{r tree_data, eval=TRUE}
 tree <- ape::read.tree(paste0(local_directory,"skinks/data/spheno.tre"))
@@ -403,6 +411,142 @@ ggsave(paste0(range_plot_directory,"elongation_no_pca.png"),plot_nopca,dpi=600)
 
 ```{r modern_ellipses_plot_show, eval=TRUE, results=TRUE}
 include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
+```
+
+</div>
+</div>
+
+---
+
+### Aridity
+
+<div class = "row">
+<div class = "col-md-4">
+
+Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. These rasters are obtained from Pohl et al. 2022, and are transformed using the `rgplates` package under the PALEOMAP model.
+
+```{r process_rasters, echo=TRUE}
+# GPLATES RECONSTRUCTIONS -- DO NOT RERUN
+# sf_use_s2(FALSE)
+# australia_shape <- st_union(spheno_shapes)
+# australia_shape <- sf_remove_holes(australia_shape)
+# bbox <- st_bbox(australia_shape)
+# 
+# raster_present_csv <- read.csv(paste0(aridity_data,"pohl/0Ma_Pohletal2022_DIB_PhaneroContinentalClimate.csv"))
+# raster_present_data <- data.frame(raster_present_csv[,c(2,1,7)])
+# colnames(raster_present_data) <- c("longitude", "latitude", "precip")
+# coordinates(raster_present_data) <- ~ longitude + latitude
+# gridded(raster_present_data) <- TRUE
+# raster_present <- raster(raster_present_data)
+# raster_present_australia <- crop(raster_present,bbox)
+# raster_present_points_australia <- as(raster_present_australia,"SpatialPixelsDataFrame")
+# raster_present_australia_data <- as.data.frame(raster_present_points_australia)
+# 
+# remove_x <- sort(unique(raster_present_australia_data$x))[1]
+# remove_y <- sort(unique(raster_present_australia_data$y),decreasing=TRUE)[1:2]
+# keep <- which(!(raster_present_australia_data$x %in% remove_x & raster_present_australia_data$y %in% remove_y))
+# raster_present_australia_data <- raster_present_australia_data[keep,]
+# 
+# write.csv(raster_present_australia_data,paste0(aridity_data,"Ma0_raster.csv"),row.names=FALSE)
+# 
+# raster_20_csv <- read.csv(paste0(aridity_data,"pohl/20Ma_Pohletal2022_DIB_PhaneroContinentalClimate.csv"))
+# raster_20_data <- data.frame(raster_20_csv[,c(2,1,7)])
+# colnames(raster_20_data) <- c("longitude", "latitude", "precip")
+# 
+# raster_20_data <- raster_20_data[which(raster_20_data$longitude>(bbox$xmin-20)),]
+# raster_20_data <- raster_20_data[which(raster_20_data$longitude<(bbox$xmax+20)),]
+# raster_20_data <- raster_20_data[which(raster_20_data$latitude>(bbox$ymin-20)),]
+# raster_20_data <- raster_20_data[which(raster_20_data$latitude<(bbox$ymax+20)),]
+# raster_20_coords <- as.matrix(raster_20_data[,c(1,2)])
+# reconstruction <- reconstruct(raster_20_coords, from=20, model="PALEOMAP")
+# 
+# raster_20_data$longitude <- reconstruction[,1]
+# raster_20_data$latitude <- reconstruction[,2]
+# raster_20_data <- na.omit(raster_20_data)
+# coordinates(raster_20_data) <- ~ longitude + latitude
+# 
+# raster_20 <- rasterize(raster_20_data,raster_present)
+# raster_20_australia <- crop(raster_20,bbox)
+# raster_20_points_australia <- as(raster_20_australia,"SpatialPixelsDataFrame")
+# raster_20_australia_data <- as.data.frame(raster_20_points_australia)
+# 
+# remove_x <- sort(unique(raster_20_australia_data$x))[1]
+# remove_y <- sort(unique(raster_20_australia_data$y),decreasing=TRUE)[1:2]
+# keep <- which(!(raster_20_australia_data$x %in% remove_x & raster_20_australia_data$y %in% remove_y))
+# raster_20_australia_data <- raster_20_australia_data[keep,]
+# 
+# write.csv(raster_20_australia_data,paste0(aridity_data,"Ma20_raster.csv"),row.names=FALSE)
+# 
+# raster_40_csv <- read.csv(paste0(aridity_data,"pohl/40Ma_Pohletal2022_DIB_PhaneroContinentalClimate.csv"))
+# raster_40_data <- data.frame(raster_40_csv[,c(2,1,7)])
+# colnames(raster_40_data) <- c("longitude", "latitude", "precip")
+# 
+# raster_40_data <- raster_40_data[which(raster_40_data$longitude>(bbox$xmin-20)),]
+# raster_40_data <- raster_40_data[which(raster_40_data$longitude<(bbox$xmax+20)),]
+# raster_40_data <- raster_40_data[which(raster_40_data$latitude>(bbox$ymin-20)),]
+# raster_40_data <- raster_40_data[which(raster_40_data$latitude<(bbox$ymax+20)),]
+# raster_40_coords <- as.matrix(raster_40_data[,c(1,2)])
+# reconstruction <- reconstruct(raster_40_coords, from=40, model="PALEOMAP")
+# 
+# raster_40_data$longitude <- reconstruction[,1]
+# raster_40_data$latitude <- reconstruction[,2]
+# raster_40_data <- na.omit(raster_40_data)
+# coordinates(raster_40_data) <- ~ longitude + latitude
+# 
+# raster_40 <- rasterize(raster_40_data,raster_present)
+# raster_40_australia <- crop(raster_40,bbox)
+# raster_40_points_australia <- as(raster_40_australia,"SpatialPixelsDataFrame")
+# raster_40_australia_data <- as.data.frame(raster_40_points_australia)
+# 
+# remove_x <- sort(unique(raster_40_australia_data$x))[1]
+# remove_y <- sort(unique(raster_40_australia_data$y),decreasing=TRUE)[1:2]
+# keep <- which(!(raster_40_australia_data$x %in% remove_x & raster_40_australia_data$y %in% remove_y))
+# raster_40_australia_data <- raster_40_australia_data[keep,]
+# 
+# write.csv(raster_40_australia_data,paste0(aridity_data,"Ma40_raster.csv"),row.names=FALSE)
+```
+ 
+```{r read_rasters, eval=TRUE}
+raster_present_australia_data <- data.frame(read.csv(paste0(aridity_data,"Ma0_raster.csv")))
+raster_20_australia_data <- data.frame(read.csv(paste0(aridity_data,"Ma20_raster.csv")))
+raster_40_australia_data <- data.frame(read.csv(paste0(aridity_data,"Ma40_raster.csv")))
+```
+
+```{r aridity_maps, echo=TRUE}
+plot_raster <- function(raster_data,name) {
+  plot <- ggplot(australia_shape) +
+    geom_tile(data=raster_data,aes(x=x,y=y,fill=precip)) +
+    scale_fill_continuous(limits=c(0,20),type="viridis") +
+    labs(fill="Precipitation") +
+    geom_sf(fill=NA,color=lines_color) +
+    annotate(geom="text",label=name,color=lines_color,size=16,x=max(raster_data$longitude),y=max(raster_data$latitude),hjust=-.15,vjust=-.1) +
+    theme_void() +
+    theme(panel.background = element_rect(fill=background_color),
+          legend.position=c(.985,.98),
+          legend.justification = c("right","top"),
+          legend.title = element_text(color=lines_color,size=12),
+          legend.text = element_text(color=lines_color,size=12),
+          legend.box.background = element_rect(fill=background_color, color=lines_color),
+          legend.margin = margin(4,4,4,4),
+          legend.spacing.y = unit(.5,"cm"),
+          aspect.ratio=1)
+return(plot)
+}
+
+present_plot <- plot_raster(raster_present_australia_data,"Present")
+Ma20_plot <- plot_raster(raster_20_australia_data,"20 Ma")
+Ma40_plot <- plot_raster(raster_40_australia_data,"40 Ma")
+
+aridity_plot <- Ma40_plot + Ma20_plot + present_plot + plot_layout(ncol = 3, guides = "collect") & theme(plot.background=element_rect(fill=background_color,color=NA))
+
+ggsave(paste0(aridity_plot_directory,"aridity_maps.png"),aridity_plot,dpi=600,width=15,height=5)
+```
+
+</div>
+<div class = "col-md-8">
+
+```{r aridity_maps_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(aridity_plot_directory,"aridity_maps.png"))
 ```
 
 </div>
@@ -2942,28 +3086,11 @@ Plotting the highest posterior estimates for a cladogenetic event at a node
 
 ### Aridity
 
-<div class = "row">
-<div class = "col-md-6">
-
-Comparing the aridity of posterior daughters to the aridity of random daughters
-
-REMEMBER, WE NEED TO USE GPLATES TO TRANSFORM LOCATIONS INTO HISTORICAL LOCATIONS BEFORE USING RASTERS
-
-```{r aridity}
-
-```
-
-</div>
-<div class = "col-md-6">
-
-Performing the same aridity analysis clade-by-clade
+Performing aridity analysis (total and clade-by-clade)
 
 ```{r aridity_by_clade}
 
 ```
-
-</div>
-</div>
 
 ---
 
@@ -2974,3 +3101,20 @@ Comparing the movement at speciation to the anagenetic movement
 ```{r movement}
 
 ```
+
+## References
+
+### Phylogenetic Tree
+
+Title, P. O., Singhal, S., Grundler, M. C., Costa, G. C., Pyron, R. A., Colston, T. J., Grundler, M. R., Prates, I., Stepanova, N., Jones, M. E. H., Cavalcanti, L. B. Q., Colli, G. R., Di-Poï, N., Donnellan, S. C., Moritz, C., Mesquita, D. O., Pianka, E. R., Smith, S. A., Vitt, L. J., & Rabosky, D. L. (2024). The macroevolutionary singularity of snakes. Science, 383(6685), 918–923. https://doi.org/10.1126/science.adh2449
+
+### Climate Rasters
+
+Pohl, A., Wong Hearing, T., Franc, A., Sepulchre, P., & Scotese, C. R. (2022). Dataset of Phanerozoic continental climate and Köppen–Geiger climate classes. Data in Brief, 43(108424), 108424. https://doi.org/10.1016/j.dib.2022.108424
+
+### GPlates Model
+
+Scotese, C.R., 2016. PALEOMAP	PaleoAtlas for GPlates and the PaleoData Plotter Program, PALEOMAP Project, http://www.earthbyte.org/paleomappaleoatlas-for-gplates/ DOI: 10.13140/RG2.2.34367.00166
+
+
+
