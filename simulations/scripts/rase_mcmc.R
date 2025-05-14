@@ -47,6 +47,6 @@ rase_data <- name.poly(owin_data,sim_tree,poly.names=sim_tree$tip.label)
 ace_x <- as.vector(ace(sim_data$x,sim_tree)$ace)
 ace_y <- as.vector(ace(sim_data$y,sim_tree)$ace)
 params_init <- c(ace_x,ace_y,.5,.5)
-rase_data <- rase(sim_tree, rase_data, params0=params_init, logevery=10, niter=10000, sigma2_scale = 0.01, nGQ=20)
+rase_data <- rase(sim_tree, rase_data, params0=params_init, logevery=10, niter=100000, sigma2_scale = 0.01, nGQ=20)
 
 write.csv(rase_data,paste0(sim_directory,"rase.csv"),row.names=FALSE,quote=FALSE)
