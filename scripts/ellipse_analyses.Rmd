@@ -25,7 +25,7 @@ output:
 
 ### Information
 
-Packages required for these analyses: ape, corrr, devtools, dplyr, empire, geojsonsf, ggplot2, ggtree, HDInterval, httr2, knitr, mcmcse, patchwork, phytools, rase, raster, rgplates, sf, sfheaders, spatstat, treeio
+Packages required for these analyses: ape, corrr, devtools, dplyr, empire, geojsonsf, ggplot2, ggtree, grid, gridExtra, HDInterval, httr2, knitr, lubridate, mcmcse, patchwork, phytools, rase, raster, rgplates, sf, sfheaders, spatstat, stringr, treeio
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=FALSE,echo=FALSE,results=FALSE,message=FALSE,warning=FALSE,tidy='styler')
@@ -39,9 +39,12 @@ library(dplyr)
 library(geojsonsf)
 library(ggplot2)
 library(ggtree)
+library(grid)
+library(gridExtra)
 library(HDInterval)
 library(httr2)
 library(knitr)
+library(lubridate)
 library(mcmcse)
 library(patchwork)
 library(phytools)
@@ -51,6 +54,7 @@ library(rgplates)
 library(sf)
 library(sfheaders)
 library(spatstat)
+library(stringr)
 library(treeio)
 ```
 
@@ -102,6 +106,244 @@ if (plot_theme == "light") {
   color_4 <- "mediumpurple"
 }
 ```
+
+---
+
+### Analysis Analytics
+
+<div class = "row">
+<div class = "col-md-6">
+
+```{r completed_analyses}
+# CHECKING FOR COMPLETED ANALYSES AND RUNTIMES -- DO NOT RERUN
+# run_log <- read.csv(paste0(cluster_directory,"joblogs/run_log.txt"),sep="\t")
+# completed_rows <- 200000
+# completed_rows_rase <- 10000
+# 
+# run_data <- data.frame(matrix(NA,nrow=0,ncol=3))
+# for (i in 1:200) {run_data <- rbind(run_data,c("full","sim",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:100) {run_data <- rbind(run_data,c("full","sensitivity",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:100) {run_data <- rbind(run_data,c("full","noisy",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:100) {run_data <- rbind(run_data,c("full","rase",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:10) {run_data <- rbind(run_data,c("standard","skinks",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:5) {run_data <- rbind(run_data,c("shuffled","skinks",stringr::str_pad(i, 3, pad = "0")))}
+# for (i in 1:5) {run_data <- rbind(run_data,c("under_prior","skinks",stringr::str_pad(i, 3, pad = "0")))}
+# colnames(run_data) <- c("condition","dataset","number")
+# run_data$ended <- FALSE
+# run_data$n_iter <- NA
+# run_data$completed <- FALSE
+# run_data$tree_size <- NA
+# run_data$hours <- NA
+# 
+# for (i in 1:nrow(run_log)) {
+#   name <- run_log[i,1]
+#   analysis_type <- unlist(strsplit(name,".",fixed=TRUE))
+#   row <- which(run_data$condition == analysis_type[1] & run_data$dataset == analysis_type[2] & run_data$number == analysis_type[3])
+#   run_data$ended[row] <- TRUE
+#   end_times <- unlist(strsplit(run_log[i,3],"_",fixed=TRUE))
+#   end_time <- as.POSIXct(paste(end_times[1],end_times[2],sep=" "))
+#   start_times <- unlist(strsplit(run_log[i,2],"_",fixed=TRUE))
+#   start_time <- as.POSIXct(paste(start_times[1],start_times[2],sep=" "))
+#   duration_hours <- round(difftime(end_time,start_time,units="hours"),3)
+#   run_data$hours[row] <- duration_hours
+# }
+# 
+# nrows <- nrow(run_data)
+# for (i in 1:nrow(run_data)) {
+#   cat("\r","Row ", i, " | ", round(as.numeric(i)/nrows*100,0), "%")
+#   if (run_data$condition[i] == "full" & run_data$dataset[i] == "sim") {
+#     directory <- paste0(sim_prefix,run_data$number[i],"/")
+#     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
+#     run_data$tree_size[i] <- length(treefile$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "full" & run_data$dataset[i] == "sensitivity") {
+#     directory <- paste0(sim_prefix,run_data$number[i],"/sensitivity/")
+#       treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
+#     run_data$tree_size[i] <- length(treefile$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "full" & run_data$dataset[i] == "noisy") {
+#     directory <- paste0(sim_prefix,run_data$number[i],"/noisy/")
+#     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
+#     run_data$tree_size[i] <- length(treefile$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "full" & run_data$dataset[i] == "rase") {
+#     directory <- paste0(sim_prefix,run_data$number[i],"/")
+#     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
+#     run_data$tree_size[i] <- length(treefile$tip.label)
+#     if (file.exists(paste0(directory,"rase.csv"))) {
+#       iterations <- as.numeric(unlist(strsplit(system(paste0("wc -l ",directory,"rase.csv"),intern=TRUE),"/V")[[1]][1]))
+#       run_data$n_iter[i] <- iterations
+#       if (iterations >= completed_rows_rase) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "standard" & run_data$dataset[i] == "skinks") {
+#     directory <- paste0(cluster_directory,"skinks/output/standard.skinks.",run_data$number[i],"/")
+#     run_data$tree_size[i] <- length(ape::read.tree(paste0(local_directory,"skinks/data/spheno.tre"))$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "shuffled" & run_data$dataset[i] == "skinks") {
+#     directory <- paste0(cluster_directory,"skinks/output/shuffled.skinks.",run_data$number[i],"/")
+#     run_data$tree_size[i] <- length(ape::read.tree(paste0(local_directory,"skinks/data/spheno.tre"))$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+#   if (run_data$condition[i] == "under_prior" & run_data$dataset[i] == "skinks") {
+#     directory <- paste0(cluster_directory,"skinks/output/under_prior.skinks.",run_data$number[i],"/")
+#     run_data$tree_size[i] <- length(ape::read.tree(paste0(local_directory,"skinks/data/spheno.tre"))$tip.label)
+#     if (file.exists(paste0(directory,"model_log.tsv"))) {
+#       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
+#       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
+#       run_data$n_iter[i] <- iterations * 10
+#       if (iterations >= completed_rows * 10) {run_data$completed[i] <- TRUE}
+#     }
+#   }
+# }
+# 
+# write.table(run_data,file=paste0(cluster_directory,"joblogs/run_data.tsv"),quote=FALSE,sep="\t",row.names=FALSE)
+```
+
+```{r analytics}
+run_data <- read.csv(paste0(cluster_directory,"joblogs/run_data.tsv"),sep="\t")
+
+data_summary <- data.frame(matrix(NA,nrow=7,ncol=5))
+colnames(data_summary) <- c("Type", "Ended", "Completed", "Size", "Hours")
+data_summary$Type <- c("Full Sim", "Full Sensitivity", "Full Noisy", "Full Rase", "Standard Skinks", "Shuffled Skinks", "Under Prior Skinks")
+
+data_summary$Ended[1] <- sum(run_data$ended[which(run_data$condition == "full" & run_data$dataset == "sim")])
+data_summary$Ended[2] <- sum(run_data$ended[which(run_data$condition == "full" & run_data$dataset == "sensitivity")])
+data_summary$Ended[3] <- sum(run_data$ended[which(run_data$condition == "full" & run_data$dataset == "noisy")])
+data_summary$Ended[4] <- sum(run_data$ended[which(run_data$condition == "full" & run_data$dataset == "rase")])
+data_summary$Ended[5] <- sum(run_data$ended[which(run_data$condition == "standard" & run_data$dataset == "skinks")])
+data_summary$Ended[6] <- sum(run_data$ended[which(run_data$condition == "shuffled" & run_data$dataset == "skinks")])
+data_summary$Ended[7] <- sum(run_data$ended[which(run_data$condition == "under_prior" & run_data$dataset == "skinks")])
+
+data_summary$Completed[1] <- sum(run_data$completed[which(run_data$condition == "full" & run_data$dataset == "sim")])
+data_summary$Completed[2] <- sum(run_data$completed[which(run_data$condition == "full" & run_data$dataset == "sensitivity")])
+data_summary$Completed[3] <- sum(run_data$completed[which(run_data$condition == "full" & run_data$dataset == "noisy")])
+data_summary$Completed[4] <- sum(run_data$completed[which(run_data$condition == "full" & run_data$dataset == "rase")])
+data_summary$Completed[5] <- sum(run_data$completed[which(run_data$condition == "standard" & run_data$dataset == "skinks")])
+data_summary$Completed[6] <- sum(run_data$completed[which(run_data$condition == "shuffled" & run_data$dataset == "skinks")])
+data_summary$Completed[7] <- sum(run_data$completed[which(run_data$condition == "under_prior" & run_data$dataset == "skinks")])
+
+data_summary$Size[1] <- round(mean(run_data$tree_size[which(run_data$condition == "full" & run_data$dataset == "sim")]))
+data_summary$Size[2] <- round(mean(run_data$tree_size[which(run_data$condition == "full" & run_data$dataset == "sensitivity")]))
+data_summary$Size[3] <- round(mean(run_data$tree_size[which(run_data$condition == "full" & run_data$dataset == "noisy")]))
+data_summary$Size[4] <- round(mean(run_data$tree_size[which(run_data$condition == "full" & run_data$dataset == "rase")]))
+data_summary$Size[5] <- round(mean(run_data$tree_size[which(run_data$condition == "standard" & run_data$dataset == "skinks")]))
+data_summary$Size[6] <- round(mean(run_data$tree_size[which(run_data$condition == "shuffled" & run_data$dataset == "skinks")]))
+data_summary$Size[7] <- round(mean(run_data$tree_size[which(run_data$condition == "under_prior" & run_data$dataset == "skinks")]))
+
+data_summary$Hours[1] <- round(mean(run_data$hours[which(run_data$condition == "full" & run_data$dataset == "sim" & run_data$hours > .1)]))
+data_summary$Hours[2] <- round(mean(run_data$hours[which(run_data$condition == "full" & run_data$dataset == "sensitivity" & run_data$hours > .1)]))
+data_summary$Hours[3] <- round(mean(run_data$hours[which(run_data$condition == "full" & run_data$dataset == "noisy" & run_data$hours > .1)]))
+data_summary$Hours[4] <- round(mean(run_data$hours[which(run_data$condition == "full" & run_data$dataset == "rase" & run_data$hours > .1)]))
+data_summary$Hours[5] <- round(mean(run_data$hours[which(run_data$condition == "standard" & run_data$dataset == "skinks" & run_data$hours > .1)]))
+data_summary$Hours[6] <- round(mean(run_data$hours[which(run_data$condition == "shuffled" & run_data$dataset == "skinks" & run_data$hours > .1)]))
+data_summary$Hours[7] <- round(mean(run_data$hours[which(run_data$condition == "under_prior" & run_data$dataset == "skinks" & run_data$hours > .1)]))
+
+data_summary_fancy <- data_summary
+colnames(data_summary_fancy) <- c("Analysis Type", "Number\nEnded", "Number\nCompleted", "Mean Tree\nSize (taxa)", "Mean\nDuration (hr)")
+
+theme <- ttheme_minimal(base_size=14, 
+                        core=list(bg_params=list(fill=background_color,col=background_color),
+                                  fg_params=list(col=lines_color)),
+                        colhead=list(bg_params=list(fill=shape_color,col=lines_color),
+                                     fg_params=list(col=lines_color,fontface=2)))
+g <- tableGrob(data_summary_fancy,rows=NULL,theme=theme)
+widthsIn <- lapply(g$widths, function(x) {convertUnit(x, unitTo = "inch", valueOnly = TRUE)})
+heigthsIn <- lapply(g$heights, function(x) {convertUnit(x, unitTo = "inch", valueOnly = TRUE)})
+w <- sum(unlist(widthsIn))
+h <- sum(unlist(heigthsIn))
+
+png(paste0(other_plot_directory,"data_summary.png"),height=h,width=w,units="in",res=400)
+grid.table(data_summary_fancy,rows=NULL,theme=theme)
+dev.off()
+```
+
+```{r analytics_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(other_plot_directory,"data_summary.png"))
+```
+
+---
+
+Complete list of analyses:
+
+* 200 full simulation analyses
+* 100 analyses for sensitivity to missing taxa
+* 100 analyses for sensitivity to noise
+* 100 *rase* analyses for comparison
+* 10 empirical analysis for skinks
+* 5 skink analyses with shuffled tips
+* 5 skink analyses under the prior
+
+</div>
+<div class = "col-md-6">
+
+Here are the run times for the simulation analyses based on the sizes of the phylogenetic trees. Note that there is a logarithmic relationship. Oddly, some analyses performed much better.
+
+```{r times, echo=TRUE}
+run_data <- read.csv(paste0(cluster_directory,"joblogs/run_data.tsv"),sep="\t")
+run_data_subset <- run_data[which(run_data$condition == "full" & run_data$dataset == "sim" & run_data$completed == TRUE),]
+coefs <- coef(lm(hours~log(tree_size),data=run_data_subset))
+times_plot <- ggplot(run_data_subset,aes(x=tree_size,y=hours)) +
+  geom_point(color=lines_color) +
+  stat_smooth(method="lm",formula=y~log(x)) +
+  scale_x_continuous(limits=c(20,240),breaks=seq(20,240,20),labels=seq(20,240,20)) +
+  labs(x="Tree Size (number of taxa)",y="Run Time (hours)") +
+  annotate(geom="text",
+           label=paste0("hours = ",round(coefs[2])," x ln(taxa) - ",round(abs(coefs[1]))),
+           x=min(run_data_subset$tree_size),
+           y=max(run_data_subset$hours),
+           color=lines_color,
+           size=6,
+           hjust="inward",
+           vjust="inward") +
+  theme_void() +
+  theme(panel.background=element_rect(fill=background_color,color=lines_color),
+        plot.background=element_rect(fill=background_color),
+        panel.grid.major=element_line(color=shape_color),
+        panel.grid.minor.y=element_line(color=shape_color),
+        panel.grid.minor.x=element_blank(),
+        axis.title.x=element_text(color=lines_color,size=16),
+        axis.title.y=element_text(color=lines_color,angle=90,size=16),
+        axis.text.x=element_text(color=lines_color),
+        axis.text.y=element_text(color=lines_color))
+ggsave(paste0(other_plot_directory,"times.png"),times_plot,dpi=600,width=8,height=6)
+```
+
+```{r times_show, eval=TRUE, results=TRUE}
+include_graphics(paste0(other_plot_directory,"times.png"))
+```
+
+</div>
+</div>
 
 ---
 
@@ -423,7 +665,7 @@ include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
 <div class = "row">
 <div class = "col-md-4">
 
-Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. These rasters are obtained from Pohl et al. 2022, and are transformed using the `rgplates` package under the PALEOMAP model.
+Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. These rasters are obtained from Pohl et al. 2022, and are transformed using the `rgplates` package under the PALEOMAP model. They have been cropped to only include cells that are within Australia and that are present for all time slices.
 
 ```{r process_rasters, echo=TRUE}
 # GPLATES RECONSTRUCTIONS -- DO NOT RERUN
@@ -439,15 +681,9 @@ Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. The
 # gridded(raster_present_data) <- TRUE
 # raster_present <- raster(raster_present_data)
 # raster_present_australia <- crop(raster_present,bbox)
+# raster_present_australia <- raster::mask(raster_present_australia,as(australia_shape,"Spatial"))
 # raster_present_points_australia <- as(raster_present_australia,"SpatialPixelsDataFrame")
 # raster_present_australia_data <- as.data.frame(raster_present_points_australia)
-# 
-# remove_x <- sort(unique(raster_present_australia_data$x))[1]
-# remove_y <- sort(unique(raster_present_australia_data$y),decreasing=TRUE)[1:2]
-# keep <- which(!(raster_present_australia_data$x %in% remove_x & raster_present_australia_data$y %in% remove_y))
-# raster_present_australia_data <- raster_present_australia_data[keep,]
-# 
-# write.csv(raster_present_australia_data,paste0(aridity_data,"Ma0_raster.csv"),row.names=FALSE)
 # 
 # raster_20_csv <- read.csv(paste0(aridity_data,"pohl/20Ma_Pohletal2022_DIB_PhaneroContinentalClimate.csv"))
 # raster_20_data <- data.frame(raster_20_csv[,c(2,1,7)])
@@ -470,13 +706,6 @@ Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. The
 # raster_20_points_australia <- as(raster_20_australia,"SpatialPixelsDataFrame")
 # raster_20_australia_data <- as.data.frame(raster_20_points_australia)
 # 
-# remove_x <- sort(unique(raster_20_australia_data$x))[1]
-# remove_y <- sort(unique(raster_20_australia_data$y),decreasing=TRUE)[1:2]
-# keep <- which(!(raster_20_australia_data$x %in% remove_x & raster_20_australia_data$y %in% remove_y))
-# raster_20_australia_data <- raster_20_australia_data[keep,]
-# 
-# write.csv(raster_20_australia_data,paste0(aridity_data,"Ma20_raster.csv"),row.names=FALSE)
-# 
 # raster_40_csv <- read.csv(paste0(aridity_data,"pohl/40Ma_Pohletal2022_DIB_PhaneroContinentalClimate.csv"))
 # raster_40_data <- data.frame(raster_40_csv[,c(2,1,7)])
 # colnames(raster_40_data) <- c("longitude", "latitude", "precip")
@@ -498,11 +727,40 @@ Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. The
 # raster_40_points_australia <- as(raster_40_australia,"SpatialPixelsDataFrame")
 # raster_40_australia_data <- as.data.frame(raster_40_points_australia)
 # 
-# remove_x <- sort(unique(raster_40_australia_data$x))[1]
-# remove_y <- sort(unique(raster_40_australia_data$y),decreasing=TRUE)[1:2]
-# keep <- which(!(raster_40_australia_data$x %in% remove_x & raster_40_australia_data$y %in% remove_y))
-# raster_40_australia_data <- raster_40_australia_data[keep,]
+# in_present <- paste(raster_present_australia_data$x,raster_present_australia_data$y)
+# in_20 <- paste(raster_20_australia_data$x,raster_20_australia_data$y)
+# in_40 <- paste(raster_40_australia_data$x,raster_40_australia_data$y)
 # 
+# pairs_present <- c()
+# for (i in 1:nrow(raster_present_australia_data)) {
+#   keep <- TRUE
+#   if (!(in_present[i] %in% in_20)) {keep <- FALSE}
+#   if (!(in_present[i] %in% in_40)) {keep <- FALSE}
+#   pairs_present <- c(pairs_present,keep)
+# }
+# 
+# pairs_20 <- c()
+# for (i in 1:nrow(raster_20_australia_data)) {
+#   keep <- TRUE
+#   if (!(in_20[i] %in% in_present)) {keep <- FALSE}
+#   if (!(in_20[i] %in% in_40)) {keep <- FALSE}
+#   pairs_20 <- c(pairs_20,keep)
+# }
+# 
+# pairs_40 <- c()
+# for (i in 1:nrow(raster_40_australia_data)) {
+#   keep <- TRUE
+#   if (!(in_40[i] %in% in_present)) {keep <- FALSE}
+#   if (!(in_40[i] %in% in_20)) {keep <- FALSE}
+#   pairs_40 <- c(pairs_40,keep)
+# }
+# 
+# raster_present_australia_data <- raster_present_australia_data[pairs_present,]
+# raster_20_australia_data <- raster_20_australia_data[pairs_20,]
+# raster_40_australia_data <- raster_40_australia_data[pairs_40,]
+# 
+# write.csv(raster_present_australia_data,paste0(aridity_data,"Ma0_raster.csv"),row.names=FALSE)
+# write.csv(raster_20_australia_data,paste0(aridity_data,"Ma20_raster.csv"),row.names=FALSE)
 # write.csv(raster_40_australia_data,paste0(aridity_data,"Ma40_raster.csv"),row.names=FALSE)
 ```
  
@@ -651,8 +909,8 @@ These are the results of the completed coverage experiment. Coverages look good 
 
 ```{r coverage, echo=TRUE}
 # SIMULATION COVERAGE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# burnin <- 10000
-# completed_iterations <- 200000
+# burnin <- 20000
+# completed_rows <- 200000
 # params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
 # simulation_numbers <- sprintf("%03.0f", 1:200)
 # nsims <- length(simulation_numbers)
@@ -663,7 +921,7 @@ These are the results of the completed coverage experiment. Coverages look good 
 #   directory <- paste0(sim_prefix,num,"/")
 #   iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])
 #   if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
-#   if (iterations >= completed_iterations) {
+#   if (iterations >= completed_rows * 10) {
 #     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
 #     tree_size <- length(treefile$tip.label)
 #     logfile <- read.csv(paste0(directory,"model_log.tsv"),sep="\t",skipNul=TRUE)
@@ -763,8 +1021,8 @@ As expected, rates of evolution of $x$ and $y$ are overestimated, because we fai
 
 ```{r sensitivity, echo=TRUE}
 # SIMULATION SENSITIVITY -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# burnin <- 10000
-# completed_iterations <- 200000
+# burnin <- 20000
+# completed_rows <- 200000
 # params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
 # simulation_numbers <- sprintf("%03.0f", 1:100)
 # nsims <- length(simulation_numbers)
@@ -777,7 +1035,7 @@ As expected, rates of evolution of $x$ and $y$ are overestimated, because we fai
 #       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])
 #       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"sensitivity/model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
 #   } else {iterations <- 0}
-#   if (iterations >= completed_iterations) {
+#   if (iterations >= completed_rows * 10) {
 #     logfile <- read.csv(paste0(directory,"sensitivity/model_log.tsv"),sep="\t",skipNul=TRUE)
 #     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
 #     true_vals <- c()
@@ -888,8 +1146,8 @@ These simulations represent a scenario where the ellipses at the tips have some 
 
 ```{r noisy, echo=TRUE}
 # SIMULATION NOISE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
-# burnin <- 10000
-# completed_iterations <- 200000
+# burnin <- 20000
+# completed_rows <- 200000
 # params_list <- c("sigma_x","sigma_y","sigma_r","sigma_s","sigma_a","mu","kappa","root_x","root_y","root_r","root_s","root_a")
 # simulation_numbers <- sprintf("%03.0f", 1:100)
 # nsims <- length(simulation_numbers)
@@ -902,7 +1160,7 @@ These simulations represent a scenario where the ellipses at the tips have some 
 #       iterations <- as.numeric(strsplit(system(paste0("tail -n 1 ",directory,"noisy/model_log.tsv"),intern=TRUE),"\t")[[1]][1])
 #       if (is.na(iterations)) {iterations <- as.numeric(strsplit(system(paste0("tail -n 2 ",directory,"noisy/model_log.tsv"),intern=TRUE),"\t")[[1]][1])}
 #   } else {iterations <- 0}
-#   if (iterations >= completed_iterations) {
+#   if (iterations >= completed_rows * 10) {
 #     logfile <- read.csv(paste0(directory,"noisy/model_log.tsv"),sep="\t",skipNul=TRUE)
 #     truefile <- strsplit(readLines(paste0(directory,"true.param.tsv")),"\t")
 #     true_vals <- c()
@@ -1021,7 +1279,6 @@ plot_param <- function(param, name) {
   max <- max(max(data_subset$hpd_high),max(data_subset$true),max(data_subset$est))
   plot <- ggplot(data_subset, aes(x=true, y=est)) +
     geom_point(size=.5,pch=16,aes(color=tree_size)) +
-    #scale_color_gradient(low="yellow",high="blue") +
     geom_abline(slope=1,linewidth=.25,color=lines_color) +
     labs(x=NULL,y=NULL) +
     annotate(geom="text",label=name,x=min,y=max,hjust="inward",vjust="inward",color=lines_color) +
