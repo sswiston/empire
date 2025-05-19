@@ -25,7 +25,7 @@ output:
 
 ### Information
 
-Packages required for these analyses: ape, corrr, devtools, dplyr, empire, geojsonsf, ggplot2, ggtree, grid, gridExtra, HDInterval, httr2, knitr, lubridate, mcmcse, patchwork, phytools, rase, raster, rgplates, sf, sfheaders, spatstat, stringr, treeio
+Packages required for these analyses: ape, corrr, devtools, dplyr, empire, geojsonsf, ggplot2, ggtree, grid, gridExtra, HDInterval, httr2, knitr, lubridate, mcmcse, patchwork, phytools, raster, rgplates, sf, sfheaders, spatstat, stringr, treeio
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval=FALSE,echo=FALSE,results=FALSE,message=FALSE,warning=FALSE,tidy='styler')
@@ -48,7 +48,6 @@ library(lubridate)
 library(mcmcse)
 library(patchwork)
 library(phytools)
-library(rase)
 library(raster)
 library(rgplates)
 library(sf)
@@ -189,7 +188,7 @@ if (plot_theme == "light") {
 #     treefile <- ape::read.tree(paste0(directory,"true.tree.txt"))
 #     run_data$tree_size[i] <- length(treefile$tip.label)
 #     if (file.exists(paste0(directory,"rase.csv"))) {
-#       iterations <- as.numeric(unlist(strsplit(system(paste0("wc -l ",directory,"rase.csv"),intern=TRUE),"/V")[[1]][1]))
+#       iterations <- as.numeric(unlist(strsplit(system(paste0("wc -l ",directory,"rase.csv"),intern=TRUE),"/V")[[1]][1])) - 1
 #       run_data$n_iter[i] <- iterations
 #       if (iterations >= completed_rows_rase) {run_data$completed[i] <- TRUE}
 #     }
@@ -285,6 +284,8 @@ h <- sum(unlist(heigthsIn))
 png(paste0(other_plot_directory,"data_summary.png"),height=h,width=w,units="in",res=400)
 grid.table(data_summary_fancy,rows=NULL,theme=theme)
 dev.off()
+
+print(run_data)
 ```
 
 ```{r analytics_show, eval=TRUE, results=TRUE}
@@ -306,7 +307,7 @@ Complete list of analyses:
 </div>
 <div class = "col-md-6">
 
-Here are the run times for the simulation analyses based on the sizes of the phylogenetic trees. Note that there is a logarithmic relationship. Oddly, some analyses performed much better.
+Here are the run times for the simulation analyses based on the sizes of the phylogenetic trees. Note that there is a logarithmic relationship. Oddly, some analyses performed much better, and seem to follow their own little trajectory.
 
 ```{r times, echo=TRUE}
 run_data <- read.csv(paste0(cluster_directory,"joblogs/run_data.tsv"),sep="\t")
@@ -665,7 +666,7 @@ include_graphics(paste0(range_plot_directory,"vectors_and_map.png"))
 <div class = "row">
 <div class = "col-md-4">
 
-Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. These rasters are obtained from Pohl et al. 2022, and are transformed using the `rgplates` package under the PALEOMAP model. They have been cropped to only include cells that are within Australia and that are present for all time slices.
+Here are the precipitation rasters for each time: 40 Ma, 20 Ma, and present. These rasters are obtained from Pohl et al. 2022, and are transformed using the `rgplates` package under the PALEOMAP model. They have been cropped to only include cells that are within Australia and that are present for all time slices. I might want to interpolate between these time slices (via per-cell linear models) to create rasters coinciding with node timings.
 
 ```{r process_rasters, echo=TRUE}
 # GPLATES RECONSTRUCTIONS -- DO NOT RERUN
@@ -1342,7 +1343,7 @@ include_graphics(paste0(simulation_plot_directory,"tree_size.png"))
 <div class = "row">
 <div class = "col-md-7">
 
-Many of these *rase* analyses did not converge. Some had no variability at all, and many had very low ESS. Also, some of the estimates were very poor. I need to examine these, and see if I can improve the *rase* analyses to provide a fair comparison. At the very least, I will perform *rase* on the remainder of the 200 simulations. So far, it looks like EMPIRE performs much better than RASE on data simulated under EMPIRE (to be expected). Interestingly, RASE not only overestimates rates (expected), but also misestimates root values substantially (less expected).
+Several of these *rase* analyses did not converge. Some had no variability at all, and some had very low ESS. This makes it difficult to get good data for the sigma parameters specifically. Also, some of the estimates are very poor (like 4 orders of magnitude off). I need to examine these, and see if I can improve the *rase* analyses to provide a fair comparison. So far, it looks like EMPIRE performs much better than RASE on data simulated under EMPIRE (to be expected). Interestingly, RASE not only overestimates rates (expected), but also misestimates root values substantially (less expected). Here, I define "outlier" based on the standard deviation of true values explored -- if the estimate is more than 4 standard deviations in either direction, it is an outlier.
 
 ```{r rase, echo=TRUE}
 # SIMULATION RASE -- DO NOT RERUN WITHOUT NEW SIMULATIONS
@@ -1359,26 +1360,28 @@ Many of these *rase* analyses did not converge. Some had no variability at all, 
 # for (num in simulation_numbers) {
 #   cat("\r","Simulation ", num, " | ", round(as.numeric(num)/nsims*100,0), "%")
 #   directory <- paste0(sim_prefix,num,"/")
-#   logfile <- read.csv(paste0(directory,"rase.csv"),sep=",",skipNul=TRUE)
-#   root_node <- (ncol(logfile))/2 + 1
-#   root_x_colname <- paste0("n",root_node,"_x")
-#   root_y_colname <- paste0("n",root_node,"_y")
-#   root_x_ind <- which(colnames(logfile)==root_x_colname)
-#   root_y_ind <- which(colnames(logfile)==root_y_colname)
-#   sigma2x_ind <- which(colnames(logfile)=="sigma2x")
-#   sigma2y_ind <- which(colnames(logfile)=="sigma2y")
-#   mcmc <- logfile[-c(1:burnin),c(root_x_ind,root_y_ind,sigma2x_ind,sigma2y_ind)]
-#   colnames(mcmc) <- c("root_x","root_y","sigma2_x","sigma2_y")
-#   mcmc$sigma_x <- lapply(mcmc$sigma2_x,"sqrt")
-#   mcmc$sigma_y <- lapply(mcmc$sigma2_y,"sqrt")
-#   for (param in params_list) {
-#     row <- which(sim_data$sim==as.numeric(num) & sim_data$param==param)
-#     if (length(row)==1) {
-#       param_mcmc <- unlist(mcmc[[param]])
-#       param_est <- mean(param_mcmc)
-#       param_ess <- ess(param_mcmc)
-#       sim_data$rase[row] <- param_est
-#       sim_data$ess[row] <- param_ess
+#   if (file.exists(paste0(directory,"rase.csv"))) {
+#     logfile <- read.csv(paste0(directory,"rase.csv"),sep=",",skipNul=TRUE)
+#     root_node <- (ncol(logfile))/2 + 1
+#     root_x_colname <- paste0("n",root_node,"_x")
+#     root_y_colname <- paste0("n",root_node,"_y")
+#     root_x_ind <- which(colnames(logfile)==root_x_colname)
+#     root_y_ind <- which(colnames(logfile)==root_y_colname)
+#     sigma2x_ind <- which(colnames(logfile)=="sigma2x")
+#     sigma2y_ind <- which(colnames(logfile)=="sigma2y")
+#     mcmc <- logfile[-c(1:burnin),c(root_x_ind,root_y_ind,sigma2x_ind,sigma2y_ind)]
+#     colnames(mcmc) <- c("root_x","root_y","sigma2_x","sigma2_y")
+#     mcmc$sigma_x <- lapply(mcmc$sigma2_x,"sqrt")
+#     mcmc$sigma_y <- lapply(mcmc$sigma2_y,"sqrt")
+#     for (param in params_list) {
+#       row <- which(sim_data$sim==as.numeric(num) & sim_data$param==param)
+#       if (length(row)==1) {
+#         param_mcmc <- unlist(mcmc[[param]])
+#         param_est <- mean(param_mcmc)
+#         param_ess <- ess(param_mcmc)
+#         sim_data$rase[row] <- param_est
+#         sim_data$ess[row] <- param_ess
+#       }
 #     }
 #   }
 # }
@@ -1388,16 +1391,15 @@ Many of these *rase* analyses did not converge. Some had no variability at all, 
 
 ``` {r rase_plots, echo=TRUE} 
 sim_data <- read.csv(paste0(simulation_output_directory,"rase_results.tsv"),sep="\t")
-sim_data <- sim_data[which(sim_data$ess >= 25),]
+sim_data <- sim_data[which(sim_data$ess >= 200),]
 
 plot_param <- function(param, name) {
   data_subset <- sim_data[which(sim_data$param == param),]
   model_data <- data.frame(cbind(true=c(data_subset$true,data_subset$true),est=c(data_subset$EMPIRE,data_subset$rase),model=c(rep("EMPIRE",nrow(data_subset)),rep("RASE",nrow(data_subset)))))
   model_data$true <- as.numeric(model_data$true)
   model_data$est <- as.numeric(model_data$est)
-  quantiles <- quantile(model_data$est,c(.25,.75),names=FALSE)
-  min <- quantiles[1] - (quantiles[2] - quantiles[1])
-  max <- quantiles[2] + (quantiles[2] - quantiles[1])
+  min <- mean(model_data$true) - 4 * abs(sd(model_data$true))
+  max <- mean(model_data$true) + 4 * abs(sd(model_data$true))
   keep <- c()
   outliers <- c()
   for (i in 1:nrow(model_data)) {
